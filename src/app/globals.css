@@ -1,0 +1,716 @@
+/**
+ * ============================================================================
+ * CRYPTO WALLET - DESIGN SYSTEM
+ * ============================================================================
+ *
+ * Professional dark theme for crypto wallet application
+ * Inspired by Binance's flat, data-focused design
+ *
+ * DESIGN PRINCIPLES:
+ * - Flat, solid colors (no gradients)
+ * - Gold accent used sparingly for primary actions
+ * - Green for gains, red for losses
+ * - Clear typography and spacing
+ * - Focus on usability and data clarity
+ * ============================================================================
+ */
+
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/**
+ * ============================================================================
+ * TAILWIND CSS v4 THEME MAPPING
+ * ============================================================================
+ */
+@theme inline {
+  /* Base colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* Typography */
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-geist-mono);
+
+  /* Brand colors */
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-primary-dark: var(--brand-primary-dark);
+  --color-brand-primary-light: var(--brand-primary-light);
+
+  /* Background layers */
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+  --color-bg-quaternary: var(--bg-quaternary);
+
+  /* Text colors */
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+
+  /* Action colors */
+  --color-action-green: var(--action-green);
+  --color-action-green-dark: var(--action-green-dark);
+  --color-action-red: var(--action-red);
+  --color-action-red-dark: var(--action-red-dark);
+
+  /* Sidebar colors (for dashboard layout) */
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+
+  /* Chart colors (for admin dashboard visualizations) */
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+
+  /* UI element colors */
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* Border radius scale */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/**
+ * ============================================================================
+ * SAFE AREA SUPPORT (iOS Notch/Home Indicator)
+ * ============================================================================
+ */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .pl-safe {
+    padding-left: env(safe-area-inset-left, 0px);
+  }
+
+  .pr-safe {
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+}
+
+/**
+ * Navigation Clearance
+ * Header: 64px (4rem) + safe area top
+ * Bottom Nav: 64px (4rem) + safe area bottom, Desktop: 80px (5rem)
+ */
+.pt-nav {
+  padding-top: max(4rem, calc(4rem + env(safe-area-inset-top)));
+}
+
+.mt-nav {
+  margin-top: max(4rem, calc(4rem + env(safe-area-inset-top)));
+}
+
+.pb-nav {
+  padding-bottom: max(4rem, calc(4rem + env(safe-area-inset-bottom)));
+}
+
+@media (min-width: 768px) {
+  .pb-nav {
+    padding-bottom: max(5rem, calc(5rem + env(safe-area-inset-bottom)));
+  }
+}
+
+/**
+ * ============================================================================
+ * DARK THEME (Default)
+ * ============================================================================
+ * Professional dark theme for crypto wallet
+ * ============================================================================
+ */
+:root {
+  /* ========================================
+   * BORDER RADIUS
+   * ======================================== */
+  --radius: 0.5rem; /* 8px - Smooth, balanced feel */
+
+  /* ========================================
+   * BASE COLORS
+   * ======================================== */
+  --background: #0b0e11; /* Deep dark background */
+  --foreground: #eaecef; /* Light text */
+
+  /* ========================================
+   * BRAND COLORS (Gold/Yellow)
+   * ======================================== */
+  --brand-primary: #f0b90b; /* Gold - primary actions */
+  --brand-primary-dark: #c99400; /* Darker gold for hover */
+  --brand-primary-light: #fcd535; /* Lighter gold for highlights */
+
+  --primary: #f0b90b; /* Gold - main actions */
+  --primary-foreground: #0b0e11; /* Dark text on gold */
+
+  /* ========================================
+   * BACKGROUND LAYERS
+   * ======================================== */
+  --bg-primary: #0b0e11; /* Main app background */
+  --bg-secondary: #181a20; /* Cards, panels */
+  --bg-tertiary: #2b3139; /* Hover states, borders */
+  --bg-quaternary: #1e2329; /* Alternative surfaces */
+
+  /* ========================================
+   * TEXT COLORS
+   * ======================================== */
+  --text-primary: #eaecef; /* Main text */
+  --text-secondary: #848e9c; /* Secondary text */
+  --text-tertiary: #5e6673; /* Disabled, hints */
+
+  /* ========================================
+   * ACTION COLORS
+   * ======================================== */
+  --action-green: #0ecb81; /* Positive, gains */
+  --action-green-dark: #0b9d66; /* Darker green for hover */
+  --action-red: #f6465d; /* Negative, losses */
+  --action-red-dark: #c43649; /* Darker red for hover */
+
+  /* ========================================
+   * SEMANTIC COLORS
+   * ======================================== */
+  --destructive: #f6465d; /* Errors, delete actions */
+  --muted: #2b3139; /* Disabled elements */
+  --muted-foreground: #848e9c; /* Muted text */
+
+  --secondary: #2b3139; /* Secondary actions */
+  --secondary-foreground: #eaecef; /* Text on secondary */
+
+  --accent: #2b3139; /* Hover states */
+  --accent-foreground: #eaecef; /* Text on accent */
+
+  /* ========================================
+   * UI ELEMENT COLORS
+   * ======================================== */
+  --card: #181a20; /* Card backgrounds */
+  --card-foreground: #eaecef; /* Text on cards */
+
+  --popover: #181a20; /* Dropdown backgrounds */
+  --popover-foreground: #eaecef; /* Text in dropdowns */
+
+  --border: #2b3139; /* Borders, dividers */
+  --input: #2b3139; /* Input borders */
+  --ring: #f0b90b; /* Focus ring - gold */
+
+  /* ========================================
+   * CHART COLORS
+   * ======================================== */
+  --chart-1: #f0b90b; /* Gold */
+  --chart-2: #0ecb81; /* Green */
+  --chart-3: #3861fb; /* Blue */
+  --chart-4: #7b61ff; /* Purple */
+  --chart-5: #f6465d; /* Red */
+
+  /* ========================================
+   * SIDEBAR COLORS
+   * ======================================== */
+  --sidebar: #181a20; /* Dark background */
+  --sidebar-foreground: #eaecef; /* Light text */
+  --sidebar-primary: #f0b90b; /* Active item - gold */
+  --sidebar-primary-foreground: #0b0e11; /* Dark text on gold */
+  --sidebar-accent: #2b3139; /* Hover state */
+  --sidebar-accent-foreground: #eaecef; /* Hover text */
+  --sidebar-border: #2b3139; /* Dividers */
+  --sidebar-ring: #f0b90b; /* Focus ring */
+}
+
+/**
+ * ============================================================================
+ * LIGHT THEME
+ * ============================================================================
+ * Professional light theme for crypto wallet
+ * ============================================================================
+ */
+.light {
+  /* ========================================
+   * BASE COLORS
+   * ======================================== */
+  --background: #ffffff; /* Pure white background */
+  --foreground: #1a1d1f; /* Dark text */
+
+  /* ========================================
+   * BRAND COLORS (Gold/Yellow) - Same as dark
+   * ======================================== */
+  --brand-primary: #f0b90b; /* Gold - primary actions */
+  --brand-primary-dark: #c99400; /* Darker gold for hover */
+  --brand-primary-light: #fcd535; /* Lighter gold for highlights */
+
+  --primary: #f0b90b; /* Gold - main actions */
+  --primary-foreground: #ffffff; /* White text on gold */
+
+  /* ========================================
+   * BACKGROUND LAYERS
+   * ======================================== */
+  --bg-primary: #ffffff; /* Main app background */
+  --bg-secondary: #f8f9fa; /* Cards, panels */
+  --bg-tertiary: #e9ecef; /* Hover states, borders */
+  --bg-quaternary: #f1f3f5; /* Alternative surfaces */
+
+  /* ========================================
+   * TEXT COLORS
+   * ======================================== */
+  --text-primary: #1a1d1f; /* Main text */
+  --text-secondary: #5e6673; /* Secondary text */
+  --text-tertiary: #848e9c; /* Disabled, hints */
+
+  /* ========================================
+   * ACTION COLORS - Same as dark
+   * ======================================== */
+  --action-green: #0ecb81; /* Positive, gains */
+  --action-green-dark: #0b9d66; /* Darker green for hover */
+  --action-red: #f6465d; /* Negative, losses */
+  --action-red-dark: #c43649; /* Darker red for hover */
+
+  /* ========================================
+   * SEMANTIC COLORS
+   * ======================================== */
+  --destructive: #f6465d; /* Errors, delete actions */
+  --muted: #f1f3f5; /* Disabled elements */
+  --muted-foreground: #5e6673; /* Muted text */
+
+  --secondary: #f1f3f5; /* Secondary actions */
+  --secondary-foreground: #1a1d1f; /* Text on secondary */
+
+  --accent: #f1f3f5; /* Hover states */
+  --accent-foreground: #1a1d1f; /* Text on accent */
+
+  /* ========================================
+   * UI ELEMENT COLORS
+   * ======================================== */
+  --card: #ffffff; /* Card backgrounds */
+  --card-foreground: #1a1d1f; /* Text on cards */
+
+  --popover: #ffffff; /* Dropdown backgrounds */
+  --popover-foreground: #1a1d1f; /* Text in dropdowns */
+
+  --border: #e9ecef; /* Borders, dividers */
+  --input: #e9ecef; /* Input borders */
+  --ring: #f0b90b; /* Focus ring - gold */
+
+  /* ========================================
+   * CHART COLORS - Same as dark
+   * ======================================== */
+  --chart-1: #f0b90b; /* Gold */
+  --chart-2: #0ecb81; /* Green */
+  --chart-3: #3861fb; /* Blue */
+  --chart-4: #7b61ff; /* Purple */
+  --chart-5: #f6465d; /* Red */
+
+  /* ========================================
+   * SIDEBAR COLORS
+   * ======================================== */
+  --sidebar: #f8f9fa; /* Light background */
+  --sidebar-foreground: #1a1d1f; /* Dark text */
+  --sidebar-primary: #f0b90b; /* Active item - gold */
+  --sidebar-primary-foreground: #ffffff; /* White text on gold */
+  --sidebar-accent: #e9ecef; /* Hover state */
+  --sidebar-accent-foreground: #1a1d1f; /* Hover text */
+  --sidebar-border: #e9ecef; /* Dividers */
+  --sidebar-ring: #f0b90b; /* Focus ring */
+}
+
+/**
+ * ============================================================================
+ * BASE LAYER UTILITIES
+ * ============================================================================
+ * Global styles applied to all elements
+ * ============================================================================
+ */
+@layer base {
+  /* Apply design tokens to all elements */
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  /* Body defaults - uses theme colors */
+  body {
+    @apply bg-bg-primary text-text-primary antialiased min-h-screen;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  /* Ensure html and body don't interfere with fixed positioning */
+  html,
+  body {
+    overflow-x: hidden;
+  }
+  
+  .h-screen-ios {
+    height: calc(var(--vh, 1vh) * 100);
+  }
+
+  /**
+   * GPU-accelerated positioning to prevent iOS PWA viewport drift
+   * The transform creates a compositing layer that pins elements to layout viewport
+   * This prevents navigation from moving when keyboard appears/disappears
+   */
+  .transform-gpu {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
+  /**
+   * Simple fixed positioning - no transforms, no GPU hints
+   * Just clean, fundamental CSS that works everywhere
+   */
+
+  /* Fixed header */
+  header.fixed {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+  }
+
+  /* Fixed bottom navigation */
+  nav.fixed {
+    position: fixed !important;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+  }
+}
+
+/**
+ * ============================================================================
+ * CUSTOM SCROLLBAR
+ * ============================================================================
+ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--bg-tertiary);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--brand-primary);
+}
+
+/* Light theme scrollbar adjustments */
+.light ::-webkit-scrollbar-thumb {
+  background-color: #dee2e6;
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--brand-primary);
+}
+
+/**
+ * ============================================================================
+ * UTILITY CLASSES
+ * ============================================================================
+ */
+
+/* ──────────────────────── SAFE-AREA MAIN CONTENT ──────────────────────── */
+@layer utilities {
+  /* Push the page content up so the fixed nav never overlaps it */
+  .pb-safe-nav {
+    padding-bottom: calc(4rem + var(--safe-bottom));
+  }
+
+  @media (min-width: 768px) {
+    .pb-safe-nav {
+      padding-bottom: calc(5rem + var(--safe-bottom));
+    }
+  }
+}
+
+/* Shimmer loading effect for skeletons */
+.shimmer {
+  background: linear-gradient(90deg, #181a20 25%, #2b3139 50%, #181a20 75%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* Subtle fade in animation */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* ============================================================================
+ * LANDING PAGE UTILITIES
+ * ============================================================================ */
+
+/* Text gradient for hero */
+.text-gradient-primary {
+  background: linear-gradient(
+    to right,
+    var(--brand-primary),
+    var(--brand-primary-light)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Enhanced glow effects */
+.shadow-glow {
+  box-shadow: 0 0 20px rgba(240, 185, 11, 0.3);
+}
+
+.shadow-glow-strong {
+  box-shadow: 0 0 40px rgba(240, 185, 11, 0.5);
+}
+
+.shadow-green-glow {
+  box-shadow: 0 0 20px rgba(14, 203, 129, 0.3);
+}
+
+/* Floating animation for hero mockup */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.floating {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Animated gradient background */
+@keyframes gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.bg-gradient-animated {
+  background: linear-gradient(
+    135deg,
+    var(--bg-primary) 0%,
+    var(--brand-primary) 50%,
+    var(--bg-primary) 100%
+  );
+  background-size: 200% 200%;
+  animation: gradient-shift 15s ease infinite;
+}
+
+/* Gradient text animation for 404 page */
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+/* ============================================================================
+ * SPLASH SCREEN ANIMATIONS (Binance-style)
+ * ============================================================================ */
+
+/* Logo pulse animation */
+@keyframes splash-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.animate-splash-pulse {
+  animation: splash-pulse 2s ease-in-out infinite;
+}
+
+/* Loading dots animation */
+@keyframes splash-dot {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.animate-splash-dot {
+  animation: splash-dot 1.4s ease-in-out infinite;
+}
+
+/* Glow effect for logo */
+.drop-shadow-glow {
+  filter: drop-shadow(0 0 20px rgba(240, 185, 11, 0.2));
+}
+
+/**
+ * ============================================================================
+ * TOAST POSITIONING & STYLING
+ * ============================================================================
+ * Position toasts below the top navigation, accounting for safe area (iPhone notch)
+ * Enhanced visibility with shadows and better contrast
+ */
+[data-sonner-toaster] {
+  top: max(calc(4rem + 1rem), calc(4rem + env(safe-area-inset-top, 0px) + 1rem)) !important;
+  /* right: max(0rem, calc(0rem + env(safe-area-inset-right, 0px))) !important; */
+  /* left: auto !important; */
+  /* bottom: auto !important; */
+  z-index: 9999 !important;
+}
+
+/* Enhanced toast styling for better visibility */
+[data-sonner-toast] {
+  background: #181a20 !important;
+  border: 1px solid #2b3139 !important;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+/* Success toast - subtle green accent */
+[data-sonner-toast][data-type="success"] {
+  border-color: rgba(14, 203, 129, 0.3) !important;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(14, 203, 129, 0.1),
+    0 0 8px rgba(14, 203, 129, 0.15) !important;
+}
+
+/* Error toast - subtle red accent */
+[data-sonner-toast][data-type="error"] {
+  border-color: rgba(246, 70, 93, 0.3) !important;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(246, 70, 93, 0.1),
+    0 0 8px rgba(246, 70, 93, 0.15) !important;
+}
+
+/* Warning toast - subtle yellow accent */
+[data-sonner-toast][data-type="warning"] {
+  border-color: rgba(240, 185, 11, 0.3) !important;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(240, 185, 11, 0.1),
+    0 0 8px rgba(240, 185, 11, 0.15) !important;
+}
+
+/* Info toast - subtle blue accent */
+[data-sonner-toast][data-type="info"] {
+  border-color: rgba(56, 97, 251, 0.3) !important;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(56, 97, 251, 0.1),
+    0 0 8px rgba(56, 97, 251, 0.15) !important;
+}
+
+/**
+ * ============================================================================
+ * NUMBER INPUT SPINNERS
+ * ============================================================================
+ * Hide the ugly native increment/decrement buttons on number inputs
+ */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/**
+ * ============================================================================
+ * COLOR USAGE REFERENCE
+ * ============================================================================
+ *
+ * BACKGROUNDS:
+ * bg-bg-primary     - Main app background (#0b0e11)
+ * bg-bg-secondary   - Cards, panels (#181a20)
+ * bg-bg-tertiary    - Hover states, borders (#2b3139)
+ * bg-bg-quaternary  - Alternative surfaces (#1e2329)
+ *
+ * TEXT:
+ * text-text-primary    - Main text (#eaecef)
+ * text-text-secondary  - Less important text (#848e9c)
+ * text-text-tertiary   - Disabled, hints (#5e6673)
+ *
+ * ACTIONS:
+ * text-action-green / bg-action-green  - Positive, gains (#0ecb81)
+ * text-action-red / bg-action-red      - Negative, losses (#f6465d)
+ * text-brand-primary / bg-brand-primary - Gold accent (#f0b90b)
+ *
+ * BORDERS:
+ * border-bg-tertiary           - Default borders
+ * hover:border-brand-primary   - Interactive elements
+ * focus:ring-brand-primary     - Focus states
+ *
+ * EXAMPLES:
+ * <div className="bg-bg-secondary border border-bg-tertiary rounded-card p-4">
+ *   <h3 className="text-text-primary">Title</h3>
+ *   <p className="text-text-secondary">Description</p>
+ * </div>
+ * ============================================================================
+ */
