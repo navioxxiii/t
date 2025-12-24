@@ -1,6 +1,6 @@
 'use client'
 
-import { Shield, Zap, Network, Smartphone } from 'lucide-react'
+import { Shield, Zap, Network, Smartphone, Vault, TrendingUp } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { branding } from '@/config/branding'
 
@@ -9,6 +9,8 @@ const iconMap = {
   Zap,
   Network,
   Smartphone,
+  Vault,
+  TrendingUp,
 }
 
 export function FeaturesGrid() {

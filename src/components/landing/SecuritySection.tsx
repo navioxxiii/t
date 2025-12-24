@@ -1,13 +1,13 @@
 'use client'
 
-import { Shield, Lock, Key, FileCheck } from 'lucide-react'
+import { Shield, Lock, KeyRound, FileCheck } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { branding } from '@/config/branding'
 
 const iconMap = {
   Shield,
   Lock,
-  Key,
+  Key: KeyRound,
   FileCheck,
 }
 
