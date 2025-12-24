@@ -6,22 +6,22 @@
 export const branding = {
   // App Identity
   name: {
-    full: 'Crypto Wallet',           // Full app name
-    short: 'Wallet',                 // Short name for limited space (home screen, etc.)
-    legal: 'Crypto Wallet Inc.',     // Legal entity name
-    copyright: '© 2024 Crypto Wallet Inc.', // Copyright notice
+    full: 'Tethvault',                    // Full app name
+    short: 'Tethvault',                   // Short name for limited space (home screen, etc.)
+    legal: 'Tethvault Inc.',              // Legal entity name
+    copyright: '© 2024 Tethvault Inc.',   // Copyright notice
   },
 
   // Descriptions
   description: {
-    short: 'Centralized cryptocurrency wallet',  // Short tagline
-    long: 'Secure and easy-to-use cryptocurrency wallet for managing your digital assets',
-    seo: 'Manage Bitcoin, Ethereum, and other cryptocurrencies with our secure, centralized wallet. Send, receive, and swap crypto with ease.',
+    short: 'Secure cryptocurrency vault',  // Short tagline
+    long: 'Your secure vault for digital assets. Store, manage, and grow your cryptocurrency portfolio with confidence.',
+    seo: 'Secure cryptocurrency vault for Bitcoin, Ethereum, and digital assets. Self-custodial wallet with bank-grade security, staking, and DeFi access.',
   },
 
   // URLs & Routing
   urls: {
-    base: 'http://localhost:3000', // Base URL - configured at build time
+    base: 'https://tethvault.com',   // Base URL - configured at build time
     startUrl: '/dashboard',
     scope: '/',
   },
@@ -29,40 +29,43 @@ export const branding = {
   // Logo Configuration
   logo: {
     src: '/icons/brand/icon-192.png',  // Path to logo image
-    size: 32,                 // Logo size in pixels
-    alt: 'Wallet Logo', // Alt text for logo
+    size: 32,                          // Logo size in pixels
+    alt: 'Tethvault Logo',             // Alt text for logo
   },
-  // Theme Colors (Match design system)
+
+  // Theme Colors (Vault-themed: deep blue/purple with gold accents)
   colors: {
-    primary: '#f0b90b',              // Gold - brand color
-    primaryDark: '#c99400',          // Darker gold
-    primaryLight: '#fcd535',         // Lighter gold
-    background: '#0b0e11',           // Dark background
-    backgroundSecondary: '#181a20',  // Card/panel background
-    text: '#eaecef',                 // Primary text
-    textSecondary: '#848e9c',        // Secondary text
+    primary: '#6366f1',              // Indigo - trust & security
+    primaryDark: '#4f46e5',          // Darker indigo
+    primaryLight: '#818cf8',         // Lighter indigo
+    background: '#0f0f1a',           // Deep dark background
+    backgroundSecondary: '#1a1a2e',  // Card/panel background
+    text: '#f1f5f9',                 // Primary text
+    textSecondary: '#94a3b8',        // Secondary text
+    accent: '#f59e0b',               // Gold accent for vault theme
   },
 
   // Company/Contact Info
   company: {
-    name: 'Crypto Wallet Inc.',
-    email: 'support@cryptowallet.com',
-    website: 'https://cryptowallet.com',
-    address: '123 Blockchain Street, Crypto City, CC 12345',
+    name: 'Tethvault Inc.',
+    email: 'support@tethvault.com',
+    website: 'https://tethvault.com',
+    address: '123 Vault Street, Digital City, DC 12345',
   },
 
-  // Social Media (optional)
+  // Social Media
   social: {
-    twitter: '@cryptowallet',
-    github: 'cryptowallet',
-    discord: 'cryptowallet',
+    twitter: '@tethvault',
+    github: 'tethvault',
+    discord: 'tethvault',
+    telegram: '@tethvault',
   },
 
   // App Metadata
   metadata: {
     version: '1.0.0',
-    author: 'Crypto Wallet Team',
-    keywords: ['crypto', 'wallet', 'bitcoin', 'ethereum', 'blockchain', 'cryptocurrency'],
+    author: 'Tethvault Team',
+    keywords: ['crypto', 'vault', 'wallet', 'bitcoin', 'ethereum', 'blockchain', 'cryptocurrency', 'defi', 'security'],
     category: 'finance',
     locale: 'en-US',
   },
@@ -77,108 +80,115 @@ export const branding = {
   // Landing Page Content
   landing: {
     hero: {
-      badge: 'Now available on iOS & Android',
-      headline: 'Your Gateway to Digital Assets',
-      highlightedText: 'Digital Assets', // Part of headline to highlight with gradient
-      subheadline: 'Secure, simple, and powerful. Manage crypto with confidence on any device. Your keys, your crypto.',
-      primaryCTA: 'Download Now',
-      secondaryCTA: 'View Demo',
+      badge: 'Trusted by 500K+ Users',
+      headline: 'Your Digital Assets, Secured in the Vault',
+      highlightedText: 'Secured in the Vault', // Part of headline to highlight with gradient
+      subheadline: 'Bank-grade security meets crypto freedom. Store, stake, and grow your portfolio with the most secure self-custodial vault.',
+      primaryCTA: 'Open Your Vault',
+      secondaryCTA: 'See How It Works',
     },
 
     stats: {
       users: '500K+',
-      rating: '4.8/5',
+      rating: '4.9/5',
       supportedChains: '50+',
       supportedTokens: '10,000+',
     },
 
     features: [
       {
-        icon: 'Shield',
-        title: 'Bank-Level Security',
-        description: 'Your keys, your crypto. Self-custodial wallet with military-grade encryption and biometric authentication.',
+        icon: 'Vault',
+        title: 'Vault-Grade Security',
+        description: 'Your crypto locked down like Fort Knox. Multi-signature protection, hardware wallet support, and military-grade encryption.',
       },
       {
-        icon: 'Zap',
-        title: 'Lightning Fast',
-        description: 'Send and receive crypto in seconds. No complicated processes, just tap and go.',
+        icon: 'Shield',
+        title: 'Self-Custodial',
+        description: 'Your keys, your coins. We never have access to your funds. True ownership and complete control.',
       },
       {
         icon: 'Network',
-        title: 'Multi-Chain Support',
-        description: 'Support for 50+ blockchains and 10,000+ tokens. ETH, BTC, SOL, and more in one place.',
+        title: 'Multi-Chain Vault',
+        description: 'One vault for all your assets. Support for 50+ blockchains and 10,000+ tokens including BTC, ETH, SOL, and more.',
       },
       {
-        icon: 'Smartphone',
-        title: 'Available Everywhere',
-        description: 'iOS, Android, browser extension, and desktop app. Your wallet, anywhere you go.',
+        icon: 'TrendingUp',
+        title: 'Grow Your Wealth',
+        description: 'Stake, earn, and invest directly from your vault. Access DeFi, staking pools, and yield opportunities.',
       },
     ],
 
     showcaseFeatures: [
       {
-        title: 'Instant Token Swaps',
-        description: 'Trade any token in seconds. We aggregate the best rates from top DEXs so you always get the best price.',
+        title: 'Secure Staking Vaults',
+        description: 'Lock your assets in secure staking vaults and earn passive income. From flexible options to high-yield fixed terms.',
         features: [
-          'Best rates from 10+ DEXs',
-          'Zero hidden fees',
-          'Instant execution',
-          'Price impact warnings',
+          'Up to 38% APY on select assets',
+          'New User Welcome Vault: 19% APY',
+          'BTC & ETH premium vaults',
+          'Flexible & fixed-term options',
+          'Auto-compound rewards',
         ],
-      },
-      {
-        title: 'Premium Earn Vaults',
-        description: 'Earn up to 38% APY with fixed-term staking vaults. From flexible monthly yields to exclusive VIP programs.',
-        features: [
-          'Up to 38% APY guaranteed',
-          'New User 19% Welcome Vault',
-          'BTC & ETH high-yield products',
-          'Limited-time Bull Rush 20.5%',
-          'Obsidian Circle VIP (invite-only)',
-        ],
-        badge: 'Most Popular',
+        badge: 'High Yield',
         highlight: true,
       },
       {
-        title: 'Elite Copy Trading',
-        description: 'Automatically copy top traders in real-time. Follow proven strategies and earn while you sleep.',
+        title: 'Instant Swaps',
+        description: 'Trade directly from your vault. We scan 10+ DEXs to find you the best rates with zero hidden fees.',
         features: [
-          'Copy top 1% performers',
-          'Live performance leaderboard',
-          'One-click follow & auto-trade',
-          'Risk-adjusted rankings',
-          'Profit-sharing model (no upfront fees)',
+          'Best rates guaranteed',
+          'Low slippage trading',
+          'Zero platform fees',
+          'Instant execution',
+          'Price protection alerts',
         ],
-        badge: 'New',
+      },
+      {
+        title: 'Copy Trading Vault',
+        description: 'Mirror top-performing traders automatically. Your vault follows proven strategies while you maintain full custody.',
+        features: [
+          'Follow elite traders (top 1%)',
+          'Real-time copy execution',
+          'Transparent performance metrics',
+          'Risk management controls',
+          'Performance-based fees only',
+        ],
+        badge: 'New Feature',
         highlight: true,
       },
     ],
 
     security: {
-      badge: 'Bank-Grade Security',
-      headline: 'Your Security is Our Priority',
-      subheadline: 'We never have access to your funds. You control your private keys, always. Your crypto is secured with military-grade encryption.',
+      badge: 'Vault-Grade Protection',
+      headline: 'Built Like a Fortress',
+      subheadline: 'Your assets are protected by multiple layers of security. From biometric locks to multi-signature vaults, we\'ve engineered the most secure crypto storage solution.',
       features: [
         {
           icon: 'Lock',
-          title: 'Self-Custodial',
-          description: 'You own your private keys. We can\'t access your funds.',
+          title: 'Multi-Signature Vaults',
+          description: 'Optional multi-sig protection requiring multiple approvals for transactions.',
         },
         {
-          icon: 'Key',
-          title: 'Biometric Authentication',
-          description: 'Face ID and fingerprint unlock for quick, secure access.',
+          icon: 'Fingerprint',
+          title: 'Biometric Locks',
+          description: 'Face ID, Touch ID, and fingerprint authentication for instant secure access.',
+        },
+        {
+          icon: 'Shield',
+          title: 'Hardware Wallet Support',
+          description: 'Connect Ledger and Trezor for maximum security cold storage integration.',
         },
         {
           icon: 'FileCheck',
-          title: 'Audited & Open Source',
-          description: 'Regularly audited by top security firms. Code available on GitHub.',
+          title: 'Audited & Verified',
+          description: 'Regular security audits by CertiK, SlowMist, and Trail of Bits.',
         },
       ],
       certifications: [
-        'SOC 2 Type II',
-        '256-bit Encryption',
-        'Regular Audits',
+        'SOC 2 Type II Certified',
+        'AES-256 Encryption',
+        'Quarterly Security Audits',
+        'Bug Bounty Program',
       ],
     },
 
@@ -203,7 +213,7 @@ export const branding = {
       },
       {
         icon: 'Monitor',
-        name: 'Desktop App',
+        name: 'Desktop Vault',
         description: 'Mac, Windows, Linux',
         badge: 'Desktop',
       },
@@ -211,68 +221,77 @@ export const branding = {
 
     faq: [
       {
-        question: 'Is it free to use?',
-        answer: 'Yes! Our wallet is completely free to download and use. We never charge for creating a wallet, sending, or receiving crypto. You only pay network gas fees, which go to the blockchain, not to us.',
+        question: 'What makes Tethvault different from other wallets?',
+        answer: 'Tethvault is built with vault-grade security from the ground up. Unlike typical wallets, we offer multi-signature protection, hardware wallet integration, and advanced security features typically found in institutional custody solutions - but you remain in full control.',
       },
       {
-        question: 'Do I need to verify my identity (KYC)?',
-        answer: 'No. We believe in privacy and decentralization. You can create a wallet and start using it immediately without providing any personal information.',
+        question: 'Is Tethvault free to use?',
+        answer: 'Yes! Tethvault is completely free to download and use. There are no subscription fees or hidden charges. You only pay standard blockchain network fees when sending transactions.',
       },
       {
-        question: 'What if I lose my phone?',
-        answer: 'Your wallet can be recovered using your 12-word recovery phrase. When you create a wallet, you\'ll receive this phrase. Keep it safe and private - anyone with access to it can access your funds.',
+        question: 'Do you have access to my funds?',
+        answer: 'Never. Tethvault is fully self-custodial. Your private keys are encrypted and stored only on your device. We cannot access, freeze, or move your funds under any circumstances.',
       },
       {
-        question: 'How secure is my crypto?',
-        answer: 'Very secure. Your private keys never leave your device, and we never have access to them. We use military-grade encryption, and the wallet has been audited by leading security firms.',
+        question: 'How do I recover my vault if I lose my device?',
+        answer: 'When you create your vault, you\'ll receive a 12 or 24-word recovery phrase. This phrase can restore your entire vault on any device. Store it securely offline - anyone with this phrase has full access to your funds.',
       },
       {
-        question: 'Which networks and tokens are supported?',
-        answer: 'We support 50+ blockchains including Ethereum, Bitcoin, Solana, Polygon, BSC, Avalanche, and more. You can store 10,000+ different tokens and NFTs.',
+        question: 'Can I use Tethvault with my hardware wallet?',
+        answer: 'Yes! Tethvault supports Ledger and Trezor hardware wallets. You can connect your hardware wallet for maximum security while still enjoying Tethvault\'s interface and features.',
       },
       {
-        question: 'Can I import my existing wallet?',
-        answer: 'Yes! You can easily import any wallet using your 12-word or 24-word seed phrase. Your existing assets will appear immediately.',
+        question: 'Which cryptocurrencies does Tethvault support?',
+        answer: 'Tethvault supports 50+ blockchains and 10,000+ tokens including Bitcoin, Ethereum, Solana, Polygon, Avalanche, BSC, Arbitrum, Optimism, and many more. We regularly add support for new chains.',
+      },
+      {
+        question: 'How secure is the staking feature?',
+        answer: 'Staking through Tethvault is non-custodial. Your staked assets remain in your control through smart contracts. We partner only with audited, reputable staking providers and protocols.',
+      },
+      {
+        question: 'Do I need KYC verification?',
+        answer: 'No. Tethvault believes in privacy and decentralization. You can create and use your vault without providing any personal information or identity verification.',
       },
     ],
 
     finalCTA: {
-      headline: 'Start Your Crypto Journey Today',
-      subheadline: 'Join 500,000+ users securing their digital assets with confidence. Download now and get started in under 30 seconds.',
-      primaryCTA: 'Download Now',
+      headline: 'Open Your Tethvault Today',
+      subheadline: 'Join 500,000+ users protecting their digital wealth with vault-grade security. Get started in under 60 seconds.',
+      primaryCTA: 'Open Your Vault',
     },
   },
 
   // Download Links
   download: {
-    ios: '#', // TODO: Add actual App Store link
-    android: '#', // TODO: Add actual Google Play link
-    chrome: '#', // TODO: Add Chrome extension link
-    firefox: '#', // TODO: Add Firefox extension link
-    desktop: '#', // TODO: Add desktop download link
+    ios: 'https://apps.apple.com/app/tethvault',
+    android: 'https://play.google.com/store/apps/details?id=com.tethvault',
+    chrome: 'https://chrome.google.com/webstore/detail/tethvault',
+    firefox: 'https://addons.mozilla.org/firefox/addon/tethvault',
+    desktop: 'https://tethvault.com/download',
   },
 
   // Email Configuration
   email: {
-    // Email-specific colors
+    // Email-specific colors (vault theme)
     colors: {
-      primary: '#f59e0b',              // Primary button color
-      primaryHover: '#d97706',         // Primary button hover
+      primary: '#6366f1',              // Primary button color (indigo)
+      primaryHover: '#4f46e5',         // Primary button hover
       secondary: '#f3f4f6',            // Secondary button background
       secondaryText: '#1f2937',        // Secondary button text
-      success: '#22c55e',              // Success states (green)
-      successBg: '#f0fdf4',           // Success background
-      warning: '#fbbf24',              // Warning states (yellow)
-      warningBg: '#fef3c7',           // Warning background
-      error: '#f87171',                // Error states (red)
+      success: '#10b981',              // Success states (green)
+      successBg: '#ecfdf5',            // Success background
+      warning: '#f59e0b',              // Warning states (amber)
+      warningBg: '#fef3c7',            // Warning background
+      error: '#ef4444',                // Error states (red)
       errorBg: '#fef2f2',              // Error background
-      info: '#0ea5e9',                 // Info states (blue)
-      infoBg: '#f0f9ff',               // Info background
-      text: '#374151',                 // Primary text color
+      info: '#3b82f6',                 // Info states (blue)
+      infoBg: '#eff6ff',               // Info background
+      text: '#111827',                 // Primary text color
       textSecondary: '#6b7280',        // Secondary text color
       textMuted: '#9ca3af',            // Muted text color
       border: '#e5e7eb',               // Border color
-      background: '#ffffff',            // Email background
+      background: '#ffffff',           // Email background
+      accent: '#f59e0b',               // Gold accent
     },
     // Email URLs
     urls: {
@@ -284,16 +303,18 @@ export const branding = {
       activity: '/activity',
       copyTrade: '/copy-trade',
       earn: '/earn',
+      vault: '/vault',
     },
     // Email content
     content: {
-      teamName: 'The Crypto Wallet Team',
-      supportMessage: 'If you have any questions, our support team is here to help.',
-      signature: 'Best regards',
+      teamName: 'The Tethvault Team',
+      supportMessage: 'Your vault, your rules. Need help? Our security team is available 24/7.',
+      signature: 'Secure regards',
+      tagline: 'Protecting your digital wealth',
     },
     // Email logo (full URL for emails)
     logo: {
-      url: 'https://yourdomain.com/icons/brand/icon-192.png', // Full URL for email clients
+      url: 'https://tethvault.com/icons/brand/icon-192.png',
       width: 60,
       height: 60,
     },
