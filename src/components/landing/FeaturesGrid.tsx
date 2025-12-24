@@ -1,17 +1,8 @@
 'use client'
 
-import { Shield, Zap, Network, Smartphone, Vault, TrendingUp } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { branding } from '@/config/branding'
-
-const iconMap = {
-  Shield,
-  Zap,
-  Network,
-  Smartphone,
-  Vault,
-  TrendingUp,
-}
+import { getIcon } from '@/lib/icons'
 
 export function FeaturesGrid() {
   const { features } = branding.landing
@@ -44,7 +35,7 @@ export function FeaturesGrid() {
         {/* Feature Cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((feature, index) => {
-            const Icon = iconMap[feature.icon as keyof typeof iconMap]
+            const Icon = getIcon(feature.icon)
             return (
               <FeatureCard
                 key={index}

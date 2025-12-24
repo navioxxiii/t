@@ -1,19 +1,13 @@
 'use client'
 
-import { Apple, Smartphone, Globe, Monitor, Download } from 'lucide-react'
+import { Apple, Smartphone, Download } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { branding } from '@/config/branding'
 import { useDeviceDetection } from '@/hooks/useDeviceDetection'
 import { usePWAInstall } from '@/hooks/usePWAInstall'
 import { IOSInstallModal } from './IOSInstallModal'
 import { InstallInstructionsDialog } from './InstallInstructionsDialog'
-
-const iconMap = {
-  Apple,
-  Smartphone,
-  Globe,
-  Monitor,
-}
+import { getIcon } from '@/lib/icons'
 
 export function PlatformSection() {
   const { platforms } = branding.landing
@@ -68,7 +62,7 @@ export function PlatformSection() {
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {platforms.map((platform, index) => {
-            const Icon = iconMap[platform.icon as keyof typeof iconMap]
+            const Icon = getIcon(platform.icon)
             return (
               <motion.div
                 key={index}

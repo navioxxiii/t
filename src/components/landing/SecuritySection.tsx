@@ -1,15 +1,9 @@
 'use client'
 
-import { Shield, Lock, KeyRound, FileCheck } from 'lucide-react'
+import { Shield, Lock } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { branding } from '@/config/branding'
-
-const iconMap = {
-  Shield,
-  Lock,
-  Key: KeyRound,
-  FileCheck,
-}
+import { getIcon } from '@/lib/icons'
 
 export function SecuritySection() {
   const { security } = branding.landing
@@ -42,7 +36,7 @@ export function SecuritySection() {
             {/* Security Features */}
             <div className="space-y-6">
               {security.features.map((feature, index) => {
-                const Icon = iconMap[feature.icon as keyof typeof iconMap]
+                const Icon = getIcon(feature.icon)
                 return (
                   <SecurityFeature
                     key={index}
