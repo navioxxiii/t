@@ -263,11 +263,11 @@ export const branding = {
 
   // Download Links
   download: {
-    ios: 'https://apps.apple.com/app/tethvault',
-    android: 'https://play.google.com/store/apps/details?id=com.tethvault',
-    chrome: 'https://chrome.google.com/webstore/detail/tethvault',
-    firefox: 'https://addons.mozilla.org/firefox/addon/tethvault',
-    desktop: 'https://tethvault.com/download',
+    ios: '#',
+    android: '#',
+    chrome: '#',
+    firefox: '#',
+    desktop: '#',
   },
 
   // Email Configuration
