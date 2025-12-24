@@ -3,7 +3,7 @@
  * Centralized in-memory cache for coin configurations with warmup on module load
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export interface CoinConfig {
   id: number;
@@ -94,7 +94,7 @@ class CoinCache {
    * Now queries base_tokens table (new centralized system)
    */
   private async refreshCache(): Promise<void> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Query base_tokens with their deployments
     const { data: baseTokens, error } = await supabase
