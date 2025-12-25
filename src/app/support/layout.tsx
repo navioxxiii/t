@@ -22,7 +22,7 @@ export default function SupportLayout({
             <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center">
               <span className="text-bg-primary font-bold text-sm">CW</span>
             </div>
-            <span className="font-bold text-text-primary">Crypto Wallet</span>
+            <span className="font-bold text-text-primary">{branding.name.full}</span>
           </Link>
           <div className="flex items-center gap-3">
             <Link
