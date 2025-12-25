@@ -73,7 +73,7 @@ export function SplashScreen({ isLoading }: SplashScreenProps) {
         <div className="animate-splash-pulse">
           <Image
             src="/icons/brand/icon-192.png"
-            alt="Crypto Wallet"
+            alt={branding.name.full}
             width={120}
             height={120}
             priority
