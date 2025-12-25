@@ -106,56 +106,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get token deployments to find base token IDs
-    const { data: fromDeployment, error: fromError } = await adminClient
-      .from('token_deployments')
-      .select(`
-        id,
-        symbol,
-        base_token_id,
-        base_tokens (
-          id,
-          code,
-          symbol,
-          name
-        )
-      `)
+    // Get base tokens directly (frontend sends base_tokens.symbol like 'BTC', 'ETH', 'USDT')
+    const { data: fromToken, error: fromError } = await adminClient
+      .from('base_tokens')
+      .select('id, code, symbol, name')
       .eq('symbol', fromCoin)
       .single();
 
-    const { data: toDeployment, error: toError } = await adminClient
-      .from('token_deployments')
-      .select(`
-        id,
-        symbol,
-        base_token_id,
-        base_tokens (
-          id,
-          code,
-          symbol,
-          name
-        )
-      `)
+    const { data: toToken, error: toError } = await adminClient
+      .from('base_tokens')
+      .select('id, code, symbol, name')
       .eq('symbol', toCoin)
       .single();
 
-    if (fromError || toError || !fromDeployment || !toDeployment) {
-      console.error('Error fetching token deployments:', { fromError, toError });
+    if (fromError || toError || !fromToken || !toToken) {
+      console.error('Error fetching base tokens:', { fromError, toError });
       return NextResponse.json(
         { error: 'Invalid token symbols' },
         { status: 404 }
       );
     }
 
-    const fromBaseToken = fromDeployment.base_tokens as any;
-    const toBaseToken = toDeployment.base_tokens as any;
-
-    // Prevent swapping same base token (e.g., USDT-ETH to USDT-TRX)
-    if (fromDeployment.base_token_id === toDeployment.base_token_id) {
+    // Prevent swapping same token
+    if (fromToken.id === toToken.id) {
       return NextResponse.json(
-        {
-          error: `Cannot swap between same token on different networks. Both ${fromCoin} and ${toCoin} are ${fromBaseToken.symbol}.`,
-        },
+        { error: `Cannot swap ${fromCoin} to itself.` },
         { status: 400 }
       );
     }
@@ -165,7 +140,7 @@ export async function POST(request: NextRequest) {
       'get_user_balance',
       {
         p_user_id: user.id,
-        p_base_token_id: fromDeployment.base_token_id,
+        p_base_token_id: fromToken.id,
       }
     );
 
@@ -198,8 +173,8 @@ export async function POST(request: NextRequest) {
       'execute_swap_v2',
       {
         p_user_id: user.id,
-        p_from_token_id: fromDeployment.base_token_id,
-        p_to_token_id: toDeployment.base_token_id,
+        p_from_token_id: fromToken.id,
+        p_to_token_id: toToken.id,
         p_from_amount: amount,
         p_to_amount: estimate.toAmount,
       }
@@ -233,17 +208,17 @@ export async function POST(request: NextRequest) {
       .from('transactions')
       .insert({
         user_id: user.id,
-        base_token_id: fromDeployment.base_token_id, // Primary token is the source
-        token_deployment_id: fromDeployment.id,
+        base_token_id: fromToken.id,
+        token_deployment_id: null, // Not needed for swaps
         type: 'swap',
         amount: amount.toString(),
         coin_symbol: fromCoin, // Keep for backward compatibility
         status: 'completed',
         ...swapTransaction, // Includes swap_from_coin and swap_to_coin strings
-        // NEW: Foreign keys for efficient querying
-        swap_from_token_id: fromDeployment.base_token_id,
-        swap_to_token_id: toDeployment.base_token_id,
-        notes: `Swapped ${amount} ${fromBaseToken.symbol} to ${estimate.toAmount.toFixed(8)} ${toBaseToken.symbol}`,
+        // Foreign keys for efficient querying
+        swap_from_token_id: fromToken.id,
+        swap_to_token_id: toToken.id,
+        notes: `Swapped ${amount} ${fromToken.symbol} to ${estimate.toAmount.toFixed(8)} ${toToken.symbol}`,
         completed_at: new Date().toISOString(),
       })
       .select()
