@@ -2,16 +2,14 @@
  * Fee Estimation API Endpoint
  * Get network fee estimate for sending crypto
  *
- * NEW: Uses centralized balance system
+ * Uses static network fees from database for simplicity and reliability.
  * - User selects network/deployment at withdrawal time
  * - Checks available balance (balance - locked_balance)
- * - Gets fee from Plisio for Plisio-managed deployments
- * - Returns network withdrawal fee for non-Plisio deployments
+ * - Returns network withdrawal fee from database
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { plisio } from '@/lib/plisio/client';
 
 export async function POST(request: NextRequest) {
   try {
@@ -134,37 +132,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get fee estimate
-    let feeEstimate;
-    let feeSource: 'plisio' | 'network' = 'network';
-
-    if (deployment.is_plisio && deployment.plisio_cid) {
-      // Plisio-managed deployment: Get dynamic fee from Plisio API
-      try {
-        feeEstimate = await plisio.getFeeEstimate(
-          deployment.plisio_cid,
-          toAddress,
-          amount,
-          'normal'
-        );
-        feeSource = 'plisio';
-        console.log('Plisio fee estimate:', feeEstimate);
-      } catch (plisioError) {
-        console.error('Plisio fee estimation failed:', plisioError);
-        // Fallback to network fee
-        feeEstimate = {
-          fee: network.withdrawal_fee || '0',
-          feeCurrency: baseToken.symbol,
-        };
-      }
-    } else {
-      // Non-Plisio deployment: Use static network fee from database
-      feeEstimate = {
-        fee: network.withdrawal_fee || '0',
-        feeCurrency: baseToken.symbol,
-        message: 'Using static network fee',
-      };
-    }
+    // Use static network fee from database
+    // This is simpler and more reliable than dynamic Plisio fee estimation
+    const feeEstimate = {
+      fee: network.withdrawal_fee || '0',
+      feeCurrency: baseToken.symbol,
+    };
 
     return NextResponse.json({
       success: true,
@@ -175,7 +148,6 @@ export async function POST(request: NextRequest) {
       amount,
       availableBalance,
       feeEstimate,
-      feeSource,
       minWithdrawal: network.min_withdrawal,
       message: 'Fee estimate retrieved successfully',
     });
