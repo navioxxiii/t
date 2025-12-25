@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { branding } from '@/config/branding';
 
 interface AdminMobileMenuProps {
   isSuperAdmin?: boolean;
@@ -30,7 +31,7 @@ export function AdminMobileMenu({ isSuperAdmin = false }: AdminMobileMenuProps) 
         <div className="flex h-full flex-col">
           {/* Logo/Brand */}
           <div className="flex h-16 items-center border-b border-bg-tertiary px-6">
-            <h1 className="text-xl font-bold text-text-primary">Crypto Wallet</h1>
+            <h1 className="text-xl font-bold text-text-primary">{branding.name.full}</h1>
           </div>
 
           {/* Sidebar Content */}
