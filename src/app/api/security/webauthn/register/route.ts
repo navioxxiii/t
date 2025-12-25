@@ -13,9 +13,10 @@ import type {
   RegistrationResponseJSON,
   AuthenticatorTransportFuture,
 } from '@simplewebauthn/server';
+import { branding } from '@/config/branding';
 
 // WebAuthn configuration
-const rpName = 'Crypto Wallet';
+const rpName = branding.name.full;
 
 /**
  * POST /api/security/webauthn/register
