@@ -120,7 +120,10 @@ export default function SwapClient() {
     if (!fromBalance) return;
     // Use available balance (not total balance)
     const available = parseFloat(fromBalance.available_balance);
-    setFromAmount(available.toString());
+    // Account for the swap fee so user can swap their full balance
+    // If fee is 2.5%, max swappable = available / 1.025
+    const maxAfterFee = available / (1 + SWAP_FEE_PERCENTAGE / 100);
+    setFromAmount(maxAfterFee.toFixed(8));
   };
 
   const handleReviewSwap = async () => {
