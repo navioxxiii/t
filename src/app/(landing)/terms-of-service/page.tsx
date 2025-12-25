@@ -3,7 +3,7 @@ import { branding } from "@/config/branding";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
-  description: "Terms and conditions for using Crypto Wallet services",
+  description: `Terms and conditions for using ${branding.name.full} services`,
 };
 
 export default function TermsOfServicePage() {
