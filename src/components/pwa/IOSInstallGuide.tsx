@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import { Share, Plus, CheckCircle } from "lucide-react";
+import { branding } from "@/config/branding";
 
 interface IOSInstallGuideProps {
   open: boolean;
@@ -36,7 +37,7 @@ export function IOSInstallGuide({
       <ResponsiveDialogContent className="max-w-md">
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle className="text-center">
-            Install Crypto Wallet
+            Install {branding.name.full}
           </ResponsiveDialogTitle>
           <ResponsiveDialogDescription className="text-center">
             Add this app to your home screen for quick access

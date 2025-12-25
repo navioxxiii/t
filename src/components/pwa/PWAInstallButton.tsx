@@ -12,6 +12,7 @@
 
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { branding } from '@/config/branding';
 import { Button } from '@/components/ui/button';
 import { X, Download } from 'lucide-react';
 import { IOSInstallGuide } from './IOSInstallGuide';
@@ -33,11 +34,30 @@ const EXCLUDED_ROUTES = [
   '/', // Landing page
 ];
 
+// Check if dismissed (must be called client-side only)
+function isDismissed(): boolean {
+  if (typeof window === 'undefined') return true; // SSR: assume dismissed
+  const dismissedAt = localStorage.getItem('pwa-install-dismissed-at');
+  if (!dismissedAt) return false;
+
+  const dismissTime = parseInt(dismissedAt, 10);
+  const timeSinceDismiss = Date.now() - dismissTime;
+
+  if (timeSinceDismiss < DISMISS_DURATION) {
+    return true; // Still within dismiss period
+  }
+
+  // Dismiss period expired, clear it
+  localStorage.removeItem('pwa-install-dismissed-at');
+  return false;
+}
+
 export function PWAInstallButton() {
   const pathname = usePathname();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showButton, setShowButton] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
+  const [dismissed, setDismissed] = useState(true); // Start as dismissed to prevent flash
   const isIOS = typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isStandalone = typeof window !== 'undefined' && (
     window.matchMedia('(display-mode: standalone)').matches ||
@@ -49,7 +69,17 @@ export function PWAInstallButton() {
     pathname === route || pathname.startsWith(`${route}/`)
   );
 
+  // Check dismiss status on mount (client-side only)
   useEffect(() => {
+    setDismissed(isDismissed());
+  }, []);
+
+  useEffect(() => {
+    // Don't show if dismissed
+    if (dismissed) {
+      return;
+    }
+
     // Don't show if already installed (standalone mode)
     if (isStandalone) {
       console.info('[PWA Install] Already installed (standalone mode)');
@@ -60,24 +90,6 @@ export function PWAInstallButton() {
     if (isExcludedRoute) {
       console.info('[PWA Install] Excluded route:', pathname);
       return;
-    }
-
-    // Check if user dismissed and if dismiss has expired
-    const dismissedAt = localStorage.getItem('pwa-install-dismissed-at');
-    if (dismissedAt) {
-      const dismissTime = parseInt(dismissedAt, 10);
-      const now = Date.now();
-      const timeSinceDismiss = now - dismissTime;
-
-      if (timeSinceDismiss < DISMISS_DURATION) {
-        const daysRemaining = Math.ceil((DISMISS_DURATION - timeSinceDismiss) / (24 * 60 * 60 * 1000));
-        console.info(`[PWA Install] Dismissed (${daysRemaining} days remaining)`);
-        return;
-      } else {
-        // Dismiss period expired, clear it
-        console.info('[PWA Install] Dismiss period expired, showing banner again');
-        localStorage.removeItem('pwa-install-dismissed-at');
-      }
     }
 
     // Android/Chrome: wait for native prompt
@@ -97,7 +109,7 @@ export function PWAInstallButton() {
       window.removeEventListener('beforeinstallprompt', handler);
       clearTimeout(timer);
     };
-  }, [isStandalone, isExcludedRoute, pathname]);
+  }, [isStandalone, isExcludedRoute, pathname, dismissed]);
 
   const handleInstall = () => {
     if (deferredPrompt) {
@@ -109,12 +121,13 @@ export function PWAInstallButton() {
 
   const handleDismiss = () => {
     setShowButton(false);
+    setDismissed(true);
     // Store dismiss timestamp (not permanent - expires in 30 days)
     localStorage.setItem('pwa-install-dismissed-at', Date.now().toString());
     console.info('[PWA Install] Dismissed for 30 days');
   };
 
-  if (!showButton) return null;
+  if (!showButton || dismissed) return null;
 
   return (
     <>
@@ -125,7 +138,7 @@ export function PWAInstallButton() {
           </div>
 
           <div className="flex-1 min-w-0">
-            <h3 className="text-white font-bold text-sm">Install Crypto Wallet</h3>
+            <h3 className="text-white font-bold text-sm">Install {branding.name.full}</h3>
             <p className="text-white/80 text-xs">
               {isIOS ? 'Add to Home Screen for quick access' : 'Install for offline use & faster loading'}
             </p>
