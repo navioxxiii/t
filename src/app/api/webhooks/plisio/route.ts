@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyPlisioCallback, validateCallbackData } from '@/lib/plisio/webhooks';
 import type { PlisioCallback } from '@/lib/plisio/types';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { sendDepositConfirmationEmail } from '@/lib/email/helpers';
 
 export async function POST(request: NextRequest) {
   try {
@@ -475,6 +476,44 @@ export async function POST(request: NextRequest) {
       amount: callback.amount,
       had_pending: !!existingTx,
     });
+
+    // Send deposit confirmation email (non-blocking)
+    try {
+      // Fetch user details and notification preferences
+      const { data: user } = await supabase
+        .from('profiles')
+        .select('email, full_name, notification_preferences')
+        .eq('id', userId)
+        .single();
+
+      if (user?.email) {
+        const prefs = user.notification_preferences as { email_deposits?: boolean } | null;
+        const shouldSendEmail = prefs?.email_deposits !== false; // Default to true
+
+        if (shouldSendEmail) {
+          // Get new balance
+          const { data: balance } = await supabase
+            .from('user_balances')
+            .select('balance')
+            .eq('user_id', userId)
+            .eq('base_token_id', baseTokenId)
+            .single();
+
+          await sendDepositConfirmationEmail({
+            email: user.email,
+            recipientName: user.full_name || 'Valued Customer',
+            amount: callback.amount,
+            coinSymbol: baseTokenSymbol || deploymentSymbol,
+            txHash: callback.txn_id,
+            newBalance: balance?.balance,
+          });
+          console.log('📧 Deposit confirmation email sent');
+        }
+      }
+    } catch (emailError) {
+      // Don't fail the webhook if email fails
+      console.error('⚠️ Failed to send deposit email:', emailError);
+    }
 
     return NextResponse.json({
       status: 'success',
