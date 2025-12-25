@@ -55,22 +55,26 @@ export async function POST(request: NextRequest) {
     const callback = body as PlisioCallback;
 
     // Verify webhook signature (CRITICAL for security)
-    // DEBUG: Uncomment to skip signature verification during testing
-    // console.log('⚠️ DEBUG - Skipping signature verification!');
-    // const signatureValid = true;
-    const signatureValid = verifyPlisioCallback(callback);
+    // SKIP_PLISIO_SIGNATURE_VERIFICATION=true can be set during development/debugging
+    const skipSignatureVerification = process.env.SKIP_PLISIO_SIGNATURE_VERIFICATION === 'true';
+
+    if (skipSignatureVerification) {
+      console.warn('⚠️⚠️⚠️ SIGNATURE VERIFICATION DISABLED - FOR DEBUGGING ONLY ⚠️⚠️⚠️');
+    }
+
+    const signatureValid = skipSignatureVerification || verifyPlisioCallback(callback);
 
     if (!signatureValid) {
       console.error('❌ Invalid webhook signature!');
-      // DEBUG: Uncomment to see what was received vs expected
-      // console.log('🔍 DEBUG - Callback data for signature:', JSON.stringify(callback, null, 2));
+      console.error('🔍 Received verify_hash:', callback.verify_hash);
+      console.error('🔍 Callback keys:', Object.keys(callback).sort().join(', '));
       return NextResponse.json(
         { error: 'Invalid signature' },
         { status: 401 }
       );
     }
 
-    console.log('✅ Signature verified');
+    console.log('✅ Signature verified', skipSignatureVerification ? '(SKIPPED!)' : '');
 
     // Only process pending and completed statuses
     if (callback.status !== 'pending' && callback.status !== 'completed') {
