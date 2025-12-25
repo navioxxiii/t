@@ -8,7 +8,7 @@ import { SupportTicketCreatedEmail } from './templates/SupportTicketCreatedEmail
 import { SupportTicketInactivityReminderEmail } from './templates/SupportTicketInactivityReminderEmail';
 import { render } from '@react-email/render';
 import { getEmailProvider } from './service';
-import { getAppName } from './utils/branding';
+import { getAppName, getTeamName } from './utils/branding';
 import { VerificationCodeEmail } from './templates/VerificationCodeEmail';
 import { WelcomeEmail } from './templates/WelcomeEmail';
 import { DepositConfirmationEmail } from './templates/DepositConfirmationEmail';
@@ -77,6 +77,7 @@ export async function sendVerificationEmail(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const provider = getEmailProvider();
+    const appName = getAppName();
 
     const html = await render(
       VerificationCodeEmail({
@@ -87,7 +88,7 @@ export async function sendVerificationEmail(
 
     const result = await provider.sendEmail({
       to: params.email,
-      subject: 'Verify Your Email - Crypto Wallet',
+      subject: `Verify Your Email - ${appName}`,
       html,
       text: `Hi ${params.recipientName},\n\nYour verification code is: ${params.code}\n\nThis code expires in 10 minutes.\n\nIf you didn't create an account, you can safely ignore this email.`,
     });
@@ -116,6 +117,7 @@ export async function sendPasswordResetEmail(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const provider = getEmailProvider();
+    const appName = getAppName();
 
     const html = await render(
       PasswordResetEmail({
@@ -126,7 +128,7 @@ export async function sendPasswordResetEmail(
 
     const result = await provider.sendEmail({
       to: params.email,
-      subject: 'Reset Your Password - Crypto Wallet',
+      subject: `Reset Your Password - ${appName}`,
       html,
       text: `Hi ${params.recipientName},\n\nWe received a request to reset your password. Your verification code is: ${params.code}\n\nThis code is valid for 10 minutes.\n\nIf you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.`,
     });
@@ -155,6 +157,7 @@ export async function sendTransactionNotification(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const provider = getEmailProvider();
+    const teamName = getTeamName();
 
     const typeLabel =
       params.transactionType === 'deposit'
@@ -166,7 +169,7 @@ export async function sendTransactionNotification(
     const subject = `${typeLabel} ${params.transactionType === 'deposit' ? 'Received' : 'Completed'} - ${params.amount} ${params.coinSymbol}`;
 
     // Simple text email for now - can create HTML template later
-    const text = `Hi ${params.recipientName},\n\nYour ${params.transactionType} of ${params.amount} ${params.coinSymbol} has been ${params.transactionType === 'deposit' ? 'received' : 'completed'}.\n\n${params.txHash ? `Transaction Hash: ${params.txHash}\n\n` : ''}Best regards,\nThe Crypto Wallet Team`;
+    const text = `Hi ${params.recipientName},\n\nYour ${params.transactionType} of ${params.amount} ${params.coinSymbol} has been ${params.transactionType === 'deposit' ? 'received' : 'completed'}.\n\n${params.txHash ? `Transaction Hash: ${params.txHash}\n\n` : ''}Best regards,\n${teamName}`;
 
     const result = await provider.sendEmail({
       to: params.email,
@@ -197,14 +200,15 @@ export async function sendWithdrawalNotification(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const provider = getEmailProvider();
+    const teamName = getTeamName();
 
     const subject = params.approved
       ? `Withdrawal Approved - ${params.amount} ${params.coinSymbol}`
       : `Withdrawal Rejected - ${params.amount} ${params.coinSymbol}`;
 
     const text = params.approved
-      ? `Hi ${params.recipientName},\n\nGood news! Your withdrawal request for ${params.amount} ${params.coinSymbol} to ${params.address} has been approved and processed.\n\nBest regards,\nThe Crypto Wallet Team`
-      : `Hi ${params.recipientName},\n\nYour withdrawal request for ${params.amount} ${params.coinSymbol} has been rejected.\n\nReason: ${params.rejectionReason || 'Not specified'}\n\nIf you have questions, please contact our support team.\n\nBest regards,\nThe Crypto Wallet Team`;
+      ? `Hi ${params.recipientName},\n\nGood news! Your withdrawal request for ${params.amount} ${params.coinSymbol} to ${params.address} has been approved and processed.\n\nBest regards,\n${teamName}`
+      : `Hi ${params.recipientName},\n\nYour withdrawal request for ${params.amount} ${params.coinSymbol} has been rejected.\n\nReason: ${params.rejectionReason || 'Not specified'}\n\nIf you have questions, please contact our support team.\n\nBest regards,\n${teamName}`;
 
     const result = await provider.sendEmail({
       to: params.email,

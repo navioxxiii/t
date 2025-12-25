@@ -4,6 +4,7 @@
  * Supports easy provider swapping via configuration
  */
 
+import { branding } from '@/config/branding';
 import type { EmailProvider, EmailConfig } from './types';
 import { ResendProvider } from './providers/resend';
 
@@ -35,7 +36,7 @@ class EmailService {
       provider: 'resend',
       apiKey: process.env.RESEND_API_KEY || '',
       fromAddress: process.env.EMAIL_FROM_ADDRESS || 'verify@resend.dev',
-      fromName: process.env.EMAIL_FROM_NAME || 'Crypto Wallet',
+      fromName: process.env.EMAIL_FROM_NAME || branding.name.full,
       replyTo: process.env.EMAIL_REPLY_TO,
       domain: process.env.RESEND_DOMAIN,
     };
