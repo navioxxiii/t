@@ -224,6 +224,15 @@ export const useAuthStore = create<AuthState>()(
 
       // Fetch profile with retry and exponential backoff
       fetchProfileWithRetry: async (userId: string, userEmail?: string | null, maxRetries = 3): Promise<boolean> => {
+        const { isFetching, profile: existingProfile } = get();
+
+        // If already fetching, don't start another retry loop
+        // Just return true if we have a profile (caller can proceed)
+        if (isFetching) {
+          console.log(`[AuthStore] fetchProfileWithRetry: Already fetching, skipping. Has profile: ${!!existingProfile}`);
+          return !!existingProfile;
+        }
+
         console.log(`[AuthStore] fetchProfileWithRetry: Starting for userId: ${userId}, maxRetries: ${maxRetries}`);
         // Set loading true at start (provides UI feedback for "Try Again")
         set({ loading: true, profileError: null });
@@ -263,6 +272,12 @@ export const useAuthStore = create<AuthState>()(
       },
       
       silentRefreshProfile: async (userId: string, userEmail?: string | null, maxRetries = 3): Promise<void> => {
+        // If already fetching, skip to avoid conflicts
+        if (get().isFetching) {
+          console.log(`[AuthStore] silentRefreshProfile: Already fetching, skipping`);
+          return;
+        }
+
         console.log(`[AuthStore] silentRefreshProfile: Starting for userId: ${userId}`);
         for (let attempt = 0; attempt < maxRetries; attempt++) {
           try {
@@ -438,10 +453,13 @@ export const useAuthStore = create<AuthState>()(
               return;
             }
             
-            if (event === 'SIGNED_IN' && session?.user &&
+            // For SIGNED_IN or TOKEN_REFRESHED with same user and existing profile,
+            // use silent refresh to avoid showing loading spinner
+            if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') &&
+                session?.user &&
                 get().user?.id === session.user.id &&
                 get().profile) {
-              console.log(`[AuthStore] onAuthStateChange: Same user with profile, doing silent refresh`);
+              console.log(`[AuthStore] onAuthStateChange: ${event} for same user with profile, doing silent refresh`);
               set({ user: session.user }); // Update user with new session/tokens
               await get().silentRefreshProfile(session.user.id, session.user.email);
               return;
@@ -493,7 +511,7 @@ export const useAuthPeriodicRefresh = () => {
   const user = useAuthStore((state) => state.user);
   const profile = useAuthStore((state) => state.profile);
   const profileTimestamp = useAuthStore((state) => state.profileTimestamp);
-  const fetchProfile = useAuthStore((state) => state.fetchProfile);
+  const silentRefreshProfile = useAuthStore((state) => state.silentRefreshProfile);
 
   useEffect(() => {
     if (!user || !profile) return;
@@ -505,8 +523,9 @@ export const useAuthPeriodicRefresh = () => {
       const FIVE_MINUTES = 5 * 60 * 1000;
 
       if (age > FIVE_MINUTES) {
-        console.log('[AuthStore] Profile stale, refreshing...');
-        fetchProfile(user.id, user.email);
+        console.log('[AuthStore] Profile stale, doing silent refresh...');
+        // Use silent refresh to avoid triggering loading state
+        silentRefreshProfile(user.id, user.email);
       }
     };
 
@@ -517,5 +536,5 @@ export const useAuthPeriodicRefresh = () => {
     const interval = setInterval(checkFreshness, 2 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [user, profile, profileTimestamp, fetchProfile]);
+  }, [user, profile, profileTimestamp, silentRefreshProfile]);
 };
