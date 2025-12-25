@@ -1,6 +1,10 @@
 /**
  * Plisio Webhook Verification
  * CRITICAL for security - prevents fake deposit notifications
+ *
+ * IMPORTANT: For Node.js/non-PHP languages, Plisio uses JSON.stringify for hash calculation
+ * when callback_url includes ?json=true parameter.
+ * See: https://plisio.net/documentation/endpoints/create-an-invoice
  */
 
 import crypto from 'crypto';
@@ -9,95 +13,56 @@ import type { PlisioCallback } from './types';
 const SECRET_KEY = process.env.PLISIO_SECRET_KEY!;
 
 /**
- * Serialize a value to PHP serialize format
- * PHP serialize format: s:length:"value"; for strings
- */
-function phpSerializeValue(value: unknown): string {
-  if (value === null || value === undefined) {
-    return 'N;';
-  }
-  if (typeof value === 'boolean') {
-    return `b:${value ? 1 : 0};`;
-  }
-  if (typeof value === 'number') {
-    if (Number.isInteger(value)) {
-      return `i:${value};`;
-    }
-    return `d:${value};`;
-  }
-  // Convert everything else to string
-  const str = String(value);
-  return `s:${str.length}:"${str}";`;
-}
-
-/**
- * Serialize an object to PHP serialize format
- * PHP serialize format for arrays: a:count:{key-value pairs}
+ * Verify Plisio webhook signature using JSON method (for Node.js)
+ * This is the official Plisio Node.js verification approach.
  *
- * Example: { "amount": "0.001", "currency": "BTC" }
- * Becomes: a:2:{s:6:"amount";s:5:"0.001";s:8:"currency";s:3:"BTC";}
- */
-function phpSerialize(obj: Record<string, unknown>): string {
-  const keys = Object.keys(obj).sort(); // ksort equivalent
-  const pairs = keys.map(key => {
-    const keyPart = `s:${key.length}:"${key}";`;
-    const valuePart = phpSerializeValue(obj[key]);
-    return keyPart + valuePart;
-  });
-  return `a:${keys.length}:{${pairs.join('')}}`;
-}
-
-/**
- * Verify Plisio webhook signature
- * This prevents malicious actors from sending fake deposit notifications
+ * From Plisio docs:
+ * ```javascript
+ * const ordered = {...data};
+ * delete ordered.verify_hash;
+ * const string = JSON.stringify(ordered);
+ * const hmac = crypto.createHmac('sha1', secretKey);
+ * hmac.update(string);
+ * const hash = hmac.digest('hex');
+ * return hash === data.verify_hash;
+ * ```
  *
- * How it works:
- * 1. Plisio sends a POST request with callback data
- * 2. They include a verify_hash calculated using HMAC-SHA1
- * 3. We recalculate the hash using PHP serialize format and compare
- * 4. If they match, the webhook is authentic
- *
- * Algorithm (from Plisio docs):
- * - Remove verify_hash from data
- * - Sort remaining fields alphabetically (ksort)
- * - Serialize using PHP serialize format
- * - Calculate HMAC-SHA1 with secret key
+ * IMPORTANT: callback_url must include ?json=true for this to work!
  *
  * @param data Callback data from Plisio webhook
  * @returns true if signature is valid, false otherwise
  */
 export function verifyPlisioCallback(data: PlisioCallback): boolean {
   try {
-    // Extract verify_hash from the data
-    const { verify_hash: receivedHash, ...callbackData } = data;
-
-    if (!receivedHash) {
+    if (!data.verify_hash) {
       console.error('Missing verify_hash in callback data');
       return false;
     }
 
-    // Serialize to PHP format (keys are sorted inside phpSerialize)
-    const serialized = phpSerialize(callbackData as Record<string, unknown>);
+    if (!SECRET_KEY) {
+      console.error('PLISIO_SECRET_KEY not configured');
+      return false;
+    }
 
-    // Calculate expected hash: HMAC-SHA1(serialized, secret_key)
-    const expectedHash = crypto
-      .createHmac('sha1', SECRET_KEY)
-      .update(serialized)
-      .digest('hex');
+    const receivedHash = data.verify_hash;
 
-    // DEBUG: Uncomment to see serialization details
-    // console.log('🔍 DEBUG - Sorted keys:', Object.keys(callbackData).sort());
-    // console.log('🔍 DEBUG - Serialized string:', serialized);
-    // console.log('🔍 DEBUG - Secret key length:', SECRET_KEY?.length);
-    // console.log('🔍 DEBUG - Expected hash:', expectedHash);
-    // console.log('🔍 DEBUG - Received hash:', receivedHash);
+    // Create ordered copy without verify_hash (per Plisio Node.js docs)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { verify_hash: _, ...ordered } = data;
 
-    // Compare hashes
+    // JSON stringify (this is what Plisio Node.js example uses)
+    const jsonString = JSON.stringify(ordered);
+
+    // Calculate HMAC-SHA1
+    const hmac = crypto.createHmac('sha1', SECRET_KEY);
+    hmac.update(jsonString);
+    const expectedHash = hmac.digest('hex');
+
     const isValid = expectedHash === receivedHash;
 
     if (!isValid) {
       console.error('Webhook signature verification failed!');
-      console.error('Serialized data:', serialized);
+      console.error('JSON string:', jsonString.substring(0, 200) + '...');
       console.error('Expected:', expectedHash);
       console.error('Received:', receivedHash);
     }
