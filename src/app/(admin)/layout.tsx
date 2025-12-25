@@ -8,6 +8,7 @@ import { redirect } from 'next/navigation';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { AdminMobileMenu } from '@/components/admin/AdminMobileMenu';
 import UserMenu from '@/components/navigation/UserMenu';
+import { branding } from '@/config/branding';
 
 export default async function AdminLayout({
   children,
@@ -47,7 +48,7 @@ export default async function AdminLayout({
         <div className="flex h-full flex-col">
           {/* Logo/Brand */}
           <div className="flex h-16 items-center border-b border-bg-tertiary px-6">
-            <h1 className="text-xl font-bold text-text-primary">Crypto Wallet</h1>
+            <h1 className="text-xl font-bold text-text-primary">{branding.name.full}</h1>
           </div>
 
           {/* Sidebar Content */}
