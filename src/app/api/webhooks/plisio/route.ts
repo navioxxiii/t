@@ -228,25 +228,28 @@ export async function POST(request: NextRequest) {
     // Check for existing transaction (for pending -> completed updates)
     const { data: existingTx } = await supabase
       .from('transactions')
-      .select('id, status')
+      .select('id, status, amount')
       .eq('tx_hash', callback.txn_id)
       .single();
 
     if (callback.status === 'pending') {
-      // PENDING: Create transaction, credit balance, then LOCK it
-      // User sees the funds but can't spend until confirmed
+      // PENDING: Create transaction record
+      // Note: Plisio often sends amount=0 for initial pending, actual amount comes with completed
       if (existingTx) {
         // Already have a record, just update confirmations
         console.log('⏳ Updating pending transaction confirmations:', callback.txn_id);
         await supabase
           .from('transactions')
           .update({
-            notes: `Deposit via Plisio - ${callback.confirmations} confirmations (pending)`,
+            notes: `Deposit via Plisio - ${callback.confirmations || 0} confirmations (pending)`,
           })
           .eq('id', existingTx.id);
 
         return NextResponse.json({ status: 'updated' });
       }
+
+      const pendingAmount = parseFloat(callback.amount);
+      const hasAmount = pendingAmount > 0;
 
       // Create new pending transaction
       const { data: transaction, error: txError } = await supabase
@@ -264,7 +267,9 @@ export async function POST(request: NextRequest) {
           to_address: depositAddress.address,
           from_address: null,
           network_fee: callback.invoice_commission || '0',
-          notes: `Deposit via Plisio - ${callback.confirmations} confirmations (pending)`,
+          notes: hasAmount
+            ? `Deposit via Plisio - ${callback.confirmations || 0} confirmations (pending)`
+            : 'Deposit detected - awaiting confirmation',
         })
         .select()
         .single();
@@ -279,20 +284,26 @@ export async function POST(request: NextRequest) {
 
       console.log('⏳ Pending transaction created:', transaction.id);
 
-      // Credit balance first
-      // DEBUG: Uncomment to trace balance operations
-      // console.log('🔍 DEBUG - Crediting pending balance:', { userId, baseTokenId, amount: callback.amount });
+      // If amount is 0, just record the transaction - balance will be credited on completion
+      if (!hasAmount) {
+        console.log('📝 Pending deposit with zero amount - will credit on completion');
+        return NextResponse.json({
+          status: 'pending',
+          message: 'Pending deposit recorded (awaiting amount)',
+          transaction_id: transaction.id,
+        });
+      }
+
+      // Credit and lock balance when we have an actual amount
       const { error: creditError } = await supabase.rpc('update_user_balance', {
         p_user_id: userId,
         p_base_token_id: baseTokenId,
-        p_amount: parseFloat(callback.amount),
+        p_amount: pendingAmount,
         p_operation: 'credit',
       });
 
       if (creditError) {
         console.error('❌ Failed to credit pending balance:', creditError);
-        // DEBUG: Uncomment to see full error details
-        // console.log('🔍 DEBUG - Credit error details:', JSON.stringify(creditError, null, 2));
         // Rollback transaction
         await supabase.from('transactions').delete().eq('id', transaction.id);
         return NextResponse.json(
@@ -305,7 +316,7 @@ export async function POST(request: NextRequest) {
       const { error: lockError } = await supabase.rpc('lock_user_balance', {
         p_user_id: userId,
         p_base_token_id: baseTokenId,
-        p_amount: parseFloat(callback.amount),
+        p_amount: pendingAmount,
       });
 
       if (lockError) {
@@ -330,12 +341,17 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ status: 'already_processed' });
       }
 
-      // Update pending -> completed
+      const pendingAmount = parseFloat(existingTx.amount || '0');
+      const completedAmount = parseFloat(callback.amount);
+      const pendingHadZeroAmount = pendingAmount <= 0;
+
+      // Update pending -> completed (also update amount if it was 0)
       const { error: updateError } = await supabase
         .from('transactions')
         .update({
           status: 'completed',
-          notes: `Deposit via Plisio - ${callback.confirmations} confirmations`,
+          amount: callback.amount, // Update to actual amount
+          notes: `Deposit via Plisio - ${callback.confirmations || 0} confirmations`,
           completed_at: new Date().toISOString(),
         })
         .eq('id', existingTx.id);
@@ -350,18 +366,43 @@ export async function POST(request: NextRequest) {
 
       console.log('✅ Transaction updated to completed:', existingTx.id);
 
-      // Unlock the previously locked balance (balance was already credited during pending)
-      const { error: unlockError } = await supabase.rpc('unlock_user_balance', {
-        p_user_id: userId,
-        p_base_token_id: baseTokenId,
-        p_amount: parseFloat(callback.amount),
-      });
+      if (pendingHadZeroAmount) {
+        // Pending had 0 amount - credit balance directly now
+        console.log('💰 Crediting balance (pending had zero amount)');
+        const { error: creditError } = await supabase.rpc('update_user_balance', {
+          p_user_id: userId,
+          p_base_token_id: baseTokenId,
+          p_amount: completedAmount,
+          p_operation: 'credit',
+        });
 
-      if (unlockError) {
-        console.error('❌ Failed to unlock balance:', unlockError);
-        // Non-fatal - admin can manually unlock if needed
+        if (creditError) {
+          console.error('❌ Failed to credit balance:', creditError);
+          // Mark as failed
+          await supabase
+            .from('transactions')
+            .update({ status: 'failed', notes: 'Balance credit failed on completion' })
+            .eq('id', existingTx.id);
+          return NextResponse.json(
+            { error: 'Failed to credit balance' },
+            { status: 500 }
+          );
+        }
+        console.log('✅ Balance credited directly:', completedAmount);
       } else {
-        console.log('🔓 Balance unlocked - deposit confirmed');
+        // Pending had amount - unlock the previously locked balance
+        const { error: unlockError } = await supabase.rpc('unlock_user_balance', {
+          p_user_id: userId,
+          p_base_token_id: baseTokenId,
+          p_amount: pendingAmount,
+        });
+
+        if (unlockError) {
+          console.error('❌ Failed to unlock balance:', unlockError);
+          // Non-fatal - admin can manually unlock if needed
+        } else {
+          console.log('🔓 Balance unlocked - deposit confirmed');
+        }
       }
     } else {
       // Create new completed transaction (webhook might have skipped pending)
