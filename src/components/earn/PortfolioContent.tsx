@@ -367,7 +367,7 @@ export function PortfolioContent() {
                     <p className="text-xs text-text-tertiary mb-1">Profit (Live)</p>
                     <div className="flex items-center gap-1">
                       <p className="font-semibold text-action-green">
-                        +${(liveProfits[position.id] || position.calculated.current_profit).toFixed(4)}
+                        +${(liveProfits[position.id] || position.calculated.current_profit).toFixed(2)}
                       </p>
                       <Activity className="h-3 w-3 text-action-green animate-pulse" />
                     </div>
