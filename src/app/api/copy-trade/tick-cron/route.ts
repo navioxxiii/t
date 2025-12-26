@@ -2,7 +2,6 @@
  * GET/POST /api/copy-trade/tick-cron
  * Background cron job (runs every 5 minutes)
  * - Updates PnL for all active positions
- * - Checks for auto-liquidation
  * - Processes waitlist (notify next person when spot opens)
  * - Expires old claims (24hr timeout)
  * - Updates trader stats
@@ -52,7 +51,6 @@ async function handleTickCron(request: NextRequest) {
     const now = new Date();
 
     let pnlUpdatesCount = 0;
-    let liquidationsCount = 0;
     let waitlistNotificationsCount = 0;
     let expiredClaimsCount = 0;
 
@@ -146,130 +144,7 @@ async function handleTickCron(request: NextRequest) {
 
     console.log(`Completed ${pnlUpdatesCount} PnL updates`);
 
-    // ──── 2. CHECK FOR AUTO-LIQUIDATION ────
-
-    console.log("Checking for auto-liquidation");
-    const { data: positionsForLiquidation } = await supabase
-      .from("user_copy_positions")
-      .select(
-        `
-        *,
-        trader:traders(*)
-      `
-      )
-      .eq("status", "active");
-
-    console.log(
-      `Checking ${positionsForLiquidation?.length || 0} positions for liquidation`
-    );
-
-    if (positionsForLiquidation) {
-      for (const position of positionsForLiquidation) {
-        // Get user's current USDT balance from user_balances
-        const { data: userBalance } = await supabase
-          .from("user_balances")
-          .select("id, balance, base_token_id, base_tokens!inner(symbol)")
-          .eq("user_id", position.user_id)
-          .eq("base_tokens.symbol", "USDT")
-          .single();
-
-        if (!userBalance) {
-          console.log(`No USDT balance found for user ${position.user_id}`);
-          continue;
-        }
-
-        const balance = parseFloat(String(userBalance.balance));
-        const allocation = Number(position.allocation_usdt);
-        const currentPnl = Number(position.current_pnl);
-
-        // Liquidate if balance drops below 10% of allocation (example threshold)
-        const liquidationThreshold = allocation * 0.1;
-
-        console.log(`Position ${position.id} liquidation check:`, {
-          balance,
-          allocation,
-          currentPnl,
-          liquidationThreshold,
-          shouldLiquidate: balance < liquidationThreshold && currentPnl < 0,
-        });
-
-        if (balance < liquidationThreshold && currentPnl < 0) {
-          // Force stop - liquidate at current loss
-          const trader = position.trader;
-          if (!trader) continue;
-
-          const profit = 0; // No performance fee on liquidation losses
-          const userReceives = allocation + currentPnl;
-
-          // Credit user (even if negative PnL) using database function
-          const { error: balanceUpdateError } = await supabase.rpc(
-            "update_user_balance",
-            {
-              p_user_id: position.user_id,
-              p_base_token_id: userBalance.base_token_id,
-              p_amount: userReceives,
-              p_operation: "credit",
-            }
-          );
-
-          if (balanceUpdateError) {
-            console.error(
-              `Failed to update balance for user ${position.user_id}:`,
-              balanceUpdateError
-            );
-          }
-
-          // Update position to liquidated
-          const { error: positionUpdateError } = await supabase
-            .from("user_copy_positions")
-            .update({
-              status: "liquidated",
-              stopped_at: now.toISOString(),
-              final_pnl: currentPnl,
-              performance_fee_paid: 0,
-            })
-            .eq("id", position.id);
-
-          if (positionUpdateError) {
-            console.error(
-              `Failed to liquidate position ${position.id}:`,
-              positionUpdateError
-            );
-          } else {
-            console.log(
-              `Successfully liquidated position ${position.id} with PnL: ${currentPnl}`
-            );
-          }
-
-          // Update trader stats
-          const currentCopiers = Number(trader.current_copiers);
-          const newCopiers = Math.max(0, currentCopiers - 1);
-          const currentAum = Number(trader.aum_usdt);
-          const newAum = Math.max(0, currentAum - allocation);
-
-          const { error: traderUpdateError } = await supabase
-            .from("traders")
-            .update({
-              current_copiers: newCopiers,
-              aum_usdt: newAum,
-            })
-            .eq("id", trader.id);
-
-          if (traderUpdateError) {
-            console.error(
-              `Failed to update trader ${trader.id} stats:`,
-              traderUpdateError
-            );
-          }
-
-          liquidationsCount++;
-        }
-      }
-    }
-
-    console.log(`Processed ${liquidationsCount} liquidations`);
-
-    // ──── 3. PROCESS WAITLIST - NOTIFY NEXT PERSON ────
+    // ──── 2. PROCESS WAITLIST - NOTIFY NEXT PERSON ────
 
     console.log("Processing waitlist");
     // Find traders with available capacity and waitlist
@@ -396,7 +271,7 @@ async function handleTickCron(request: NextRequest) {
 
     console.log(`Sent ${waitlistNotificationsCount} waitlist notifications`);
 
-    // ──── 4. EXPIRE OLD CLAIMS (24hr timeout) ────
+    // ──── 3. EXPIRE OLD CLAIMS (24hr timeout) ────
 
     console.log("Checking for expired claims");
     const { data: expiredClaims, error: expiredError } = await supabase
@@ -429,7 +304,7 @@ async function handleTickCron(request: NextRequest) {
 
     console.log(`Expired ${expiredClaimsCount} claims`);
 
-    // ──── 5. UPDATE TRADER STATS ────
+    // ──── 4. UPDATE TRADER STATS ────
 
     console.log("Updating trader stats");
     if (traders) {
@@ -470,7 +345,6 @@ async function handleTickCron(request: NextRequest) {
       message: "Tick cron completed successfully",
       stats: {
         pnl_updates: pnlUpdatesCount,
-        liquidations: liquidationsCount,
         waitlist_notifications: waitlistNotificationsCount,
         expired_claims: expiredClaimsCount,
       },
