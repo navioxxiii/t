@@ -64,15 +64,15 @@ export function TraderCard({ trader }: TraderCardProps) {
     }
   };
 
-  // Format large numbers
+  // Format large numbers with consistent 2 decimal places
   const formatAUM = (value: number) => {
     if (value >= 1000000) {
       return `$${(value / 1000000).toFixed(2)}M`;
     }
     if (value >= 1000) {
-      return `$${(value / 1000).toFixed(0)}K`;
+      return `$${(value / 1000).toFixed(2)}K`;
     }
-    return `$${value.toFixed(0)}`;
+    return `$${value.toFixed(2)}`;
   };
 
   return (

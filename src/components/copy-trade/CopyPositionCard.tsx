@@ -174,7 +174,7 @@ export function CopyPositionCard({ position, onStop }: CopyPositionCardProps) {
                 isProfit ? "text-action-green" : "text-action-red"
               }`}
             >
-              {isProfit ? "+" : ""}${pnl.toFixed(4)}
+              {isProfit ? "+" : ""}${pnl.toFixed(2)}
             </span>
             <span
               className={`text-sm ${
