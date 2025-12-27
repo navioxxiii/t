@@ -237,7 +237,8 @@ export function LivenessCheck({
               </Button>
 
               {/* TODO: Re-enable photo upload when ready */}
-              {/* <Button
+              {/*  */}
+              <Button
                 type="button"
                 variant="outline"
                 size="sm"
@@ -245,7 +246,7 @@ export function LivenessCheck({
                 disabled={disabled}
               >
                 Upload Photo
-              </Button> */}
+              </Button>
             </div>
 
             <input
