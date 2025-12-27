@@ -54,8 +54,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid tier' }, { status: 400 });
     }
 
+    // Validate date format (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date_of_birth)) {
+      return NextResponse.json(
+        { error: 'Invalid date format. Expected YYYY-MM-DD' },
+        { status: 400 }
+      );
+    }
+
     // Validate age (18+)
     const dob = new Date(date_of_birth);
+    if (isNaN(dob.getTime())) {
+      return NextResponse.json(
+        { error: 'Invalid date of birth' },
+        { status: 400 }
+      );
+    }
+
     const age = Math.floor(
       (Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
     );
@@ -161,9 +177,21 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError) {
-      console.error('Error creating submission:', insertError);
+      console.error('Error creating submission:', {
+        message: insertError.message,
+        code: insertError.code,
+        details: insertError.details,
+        hint: insertError.hint,
+        submissionData: {
+          ...submissionData,
+          // Redact URLs for privacy
+          id_document_front_url: submissionData.id_document_front_url ? '[REDACTED]' : null,
+          id_document_back_url: submissionData.id_document_back_url ? '[REDACTED]' : null,
+          selfie_url: submissionData.selfie_url ? '[REDACTED]' : null,
+        },
+      });
       return NextResponse.json(
-        { error: 'Failed to submit KYC application' },
+        { error: insertError.message || 'Failed to submit KYC application' },
         { status: 500 }
       );
     }
@@ -178,7 +206,13 @@ export async function POST(request: Request) {
       .eq('id', user.id);
 
     if (updateError) {
-      console.error('Error updating profile:', updateError);
+      console.error('Error updating profile kyc_status:', {
+        message: updateError.message,
+        code: updateError.code,
+        details: updateError.details,
+        hint: updateError.hint,
+        userId: user.id,
+      });
       // Don't fail the request if profile update fails
     }
 
