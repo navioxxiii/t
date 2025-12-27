@@ -54,7 +54,25 @@ export async function POST(request: Request) {
 
     // Generate unique filename
     const timestamp = Date.now();
-    const extension = file.name.split('.').pop();
+    // Extract extension safely, defaulting to jpg for images
+    const nameParts = file.name.split('.');
+    let extension = nameParts.length > 1 ? nameParts.pop()?.toLowerCase() : null;
+
+    // If no extension or invalid, derive from MIME type
+    if (!extension || extension === file.name.toLowerCase()) {
+      if (file.type === 'image/jpeg' || file.type === 'image/jpg') {
+        extension = 'jpg';
+      } else if (file.type === 'image/png') {
+        extension = 'png';
+      } else if (file.type === 'image/webp') {
+        extension = 'webp';
+      } else if (file.type === 'application/pdf') {
+        extension = 'pdf';
+      } else {
+        extension = 'jpg'; // Fallback
+      }
+    }
+
     const filename = `${user.id}/${type}_${timestamp}.${extension}`;
 
     // Convert file to ArrayBuffer
@@ -70,9 +88,16 @@ export async function POST(request: Request) {
       });
 
     if (uploadError) {
-      console.error('Upload error:', uploadError);
+      console.error('Upload error:', {
+        message: uploadError.message,
+        name: uploadError.name,
+        filename,
+        fileType: file.type,
+        fileSize: file.size,
+        userId: user.id,
+      });
       return NextResponse.json(
-        { error: 'Failed to upload file' },
+        { error: uploadError.message || 'Failed to upload file' },
         { status: 500 }
       );
     }
