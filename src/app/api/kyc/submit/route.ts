@@ -146,6 +146,17 @@ export async function POST(request: Request) {
     const ip = request.headers.get('x-forwarded-for') || 'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
+    console.log('[KYC Submit] Creating submission with data:', {
+      requested_tier,
+      full_name: full_name.trim(),
+      date_of_birth,
+      nationality: nationality.trim(),
+      id_document_type: body.id_document_type,
+      has_id_front: !!body.id_document_front_url,
+      has_id_back: !!body.id_document_back_url,
+      has_selfie: !!body.selfie_url,
+    });
+
     // Create KYC submission
     const submissionData = {
       user_id: user.id,
