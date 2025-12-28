@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST(request: Request) {
   try {
@@ -75,17 +76,42 @@ export async function POST(request: Request) {
 
     const filename = `${user.id}/${type}_${timestamp}.${extension}`;
 
+    console.log('[KYC Upload] Preparing upload:', {
+      filename,
+      originalFileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      extension,
+      userId: user.id,
+      docType: type,
+    });
+
     // Convert file to ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
+    console.log('[KYC Upload] Buffer created, size:', buffer.length);
+
+    // Use admin client for storage to bypass RLS (we've already verified auth)
+    const adminClient = createAdminClient();
+
     // Upload to Supabase storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await adminClient.storage
       .from('kyc-documents')
       .upload(filename, buffer, {
         contentType: file.type,
         upsert: false,
       });
+
+    console.log('[KYC Upload] Upload result:', {
+      success: !uploadError,
+      data: uploadData,
+      error: uploadError ? {
+        message: uploadError.message,
+        name: uploadError.name,
+        cause: uploadError.cause,
+      } : null
+    });
 
     if (uploadError) {
       console.error('Upload error:', {
@@ -103,7 +129,7 @@ export async function POST(request: Request) {
     }
 
     // Get public URL
-    const { data: { publicUrl } } = supabase.storage
+    const { data: { publicUrl } } = adminClient.storage
       .from('kyc-documents')
       .getPublicUrl(filename);
 
