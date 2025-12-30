@@ -58,9 +58,10 @@ export function CreateTokenDeploymentDialog({ open, onOpenChange }: CreateTokenD
     token_standard: 'native',
     contract_address: '',
     decimals: '18',
-    is_plisio: false,
-    plisio_cid: '',
-    default_address: '',
+    gateway: 'internal' as 'plisio' | 'nowpayments' | 'internal',
+    gateway_cid: '', // For Plisio
+    gateway_currency: '', // For NOWPayments
+    default_address: '', // For Internal
     price_provider: '',
     price_provider_id: '',
     is_active: true,
@@ -118,31 +119,49 @@ export function CreateTokenDeploymentDialog({ open, onOpenChange }: CreateTokenD
       return;
     }
 
-    // Validate Plisio configuration
-    if (formData.is_plisio && !formData.plisio_cid) {
-      toast.error('Plisio CID is required when Plisio is enabled');
+    // Validate gateway configuration
+    if (formData.gateway === 'plisio' && !formData.gateway_cid) {
+      toast.error('Plisio CID is required when using Plisio gateway');
       setLoading(false);
       return;
     }
 
-    // Validate default address if Plisio is disabled
-    if (!formData.is_plisio && !formData.default_address) {
-      toast.error('Default address is required when Plisio is disabled');
+    if (formData.gateway === 'nowpayments' && !formData.gateway_currency) {
+      toast.error('Currency code is required when using NOWPayments gateway');
       setLoading(false);
       return;
+    }
+
+    if (formData.gateway === 'internal' && !formData.default_address) {
+      toast.error('Default address is required when using internal gateway');
+      setLoading(false);
+      return;
+    }
+
+    // Build gateway_config based on gateway type
+    let gatewayConfig = null;
+    if (formData.gateway === 'plisio') {
+      gatewayConfig = { cid: formData.gateway_cid };
+    } else if (formData.gateway === 'nowpayments') {
+      gatewayConfig = { currency: formData.gateway_currency.toLowerCase() };
+    } else if (formData.gateway === 'internal' && formData.default_address) {
+      gatewayConfig = { default_address: formData.default_address };
     }
 
     try {
       const payload = {
-        ...formData,
+        base_token_id: formData.base_token_id,
+        network_id: formData.network_id,
+        token_standard: formData.token_standard,
         decimals: decimals,
         symbol: formData.symbol || undefined,
         display_name: formData.display_name || undefined,
         contract_address: formData.contract_address || null,
-        plisio_cid: formData.is_plisio ? formData.plisio_cid : null,
-        default_address: !formData.is_plisio ? formData.default_address : null,
+        gateway: formData.gateway,
+        gateway_config: gatewayConfig,
         price_provider: formData.price_provider || null,
         price_provider_id: formData.price_provider_id || null,
+        is_active: formData.is_active,
       };
 
       console.log('Creating token deployment with payload:', payload);
@@ -173,8 +192,9 @@ export function CreateTokenDeploymentDialog({ open, onOpenChange }: CreateTokenD
         token_standard: 'native',
         contract_address: '',
         decimals: '18',
-        is_plisio: false,
-        plisio_cid: '',
+        gateway: 'internal',
+        gateway_cid: '',
+        gateway_currency: '',
         default_address: '',
         price_provider: '',
         price_provider_id: '',
@@ -326,38 +346,65 @@ export function CreateTokenDeploymentDialog({ open, onOpenChange }: CreateTokenD
             <div className="border-t pt-4">
               <h4 className="text-sm font-medium mb-3">Payment Gateway Configuration</h4>
 
-              <div className="flex items-center justify-between mb-4">
-                <Label htmlFor="is_plisio" className="flex flex-col gap-1">
-                  <span>Enable Plisio Integration</span>
-                  <span className="font-normal text-xs text-text-tertiary">
-                    Use Plisio payment gateway for deposits
-                  </span>
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="gateway">
+                  Payment Gateway <span className="text-red-500">*</span>
                 </Label>
-                <Switch
-                  id="is_plisio"
-                  checked={formData.is_plisio}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, is_plisio: checked })
+                <Select
+                  value={formData.gateway}
+                  onValueChange={(value: 'plisio' | 'nowpayments' | 'internal') =>
+                    setFormData({ ...formData, gateway: value })
                   }
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent position="popper" className="z-999">
+                    <SelectItem value="plisio">Plisio (BTC, ETH, LTC, DOGE, TRX)</SelectItem>
+                    <SelectItem value="nowpayments">NOWPayments (SOL, XRP, ADA)</SelectItem>
+                    <SelectItem value="internal">Internal (Shared Address)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-text-tertiary">
+                  Select the payment gateway for processing deposits
+                </p>
               </div>
 
-              {formData.is_plisio ? (
+              {formData.gateway === 'plisio' && (
                 <div className="space-y-2">
-                  <Label htmlFor="plisio_cid">
+                  <Label htmlFor="gateway_cid">
                     Plisio Currency ID (CID) <span className="text-red-500">*</span>
                   </Label>
                   <Input
-                    id="plisio_cid"
+                    id="gateway_cid"
                     placeholder="e.g., USDT_TRX, BTC, ETH"
-                    value={formData.plisio_cid}
-                    onChange={(e) => setFormData({ ...formData, plisio_cid: e.target.value })}
+                    value={formData.gateway_cid}
+                    onChange={(e) => setFormData({ ...formData, gateway_cid: e.target.value })}
                   />
                   <p className="text-xs text-text-tertiary">
-                    Plisio's currency identifier for this token/network combination
+                    Plisio&apos;s currency identifier for this token/network combination
                   </p>
                 </div>
-              ) : (
+              )}
+
+              {formData.gateway === 'nowpayments' && (
+                <div className="space-y-2">
+                  <Label htmlFor="gateway_currency">
+                    NOWPayments Currency Code <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="gateway_currency"
+                    placeholder="e.g., sol, xrp, ada"
+                    value={formData.gateway_currency}
+                    onChange={(e) => setFormData({ ...formData, gateway_currency: e.target.value.toLowerCase() })}
+                  />
+                  <p className="text-xs text-text-tertiary">
+                    NOWPayments currency code (lowercase)
+                  </p>
+                </div>
+              )}
+
+              {formData.gateway === 'internal' && (
                 <div className="space-y-2">
                   <Label htmlFor="default_address">
                     Default Deposit Address <span className="text-red-500">*</span>
@@ -369,7 +416,7 @@ export function CreateTokenDeploymentDialog({ open, onOpenChange }: CreateTokenD
                     onChange={(e) => setFormData({ ...formData, default_address: e.target.value })}
                   />
                   <p className="text-xs text-text-tertiary">
-                    Fallback address used when Plisio is not enabled
+                    Shared address used for all users (requires manual reconciliation)
                   </p>
                 </div>
               )}

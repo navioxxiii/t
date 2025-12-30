@@ -39,6 +39,12 @@ import { toast } from 'sonner';
 import { CreateTokenDeploymentDialog } from './CreateTokenDeploymentDialog';
 import { EditTokenDeploymentDialog } from './EditTokenDeploymentDialog';
 
+interface GatewayConfig {
+  cid?: string;
+  currency?: string;
+  default_address?: string;
+}
+
 interface TokenDeployment {
   id: string;
   symbol: string;
@@ -46,9 +52,8 @@ interface TokenDeployment {
   token_standard: string;
   contract_address: string | null;
   decimals: number;
-  is_plisio: boolean;
-  plisio_cid: string | null;
-  default_address: string | null;
+  gateway: 'plisio' | 'nowpayments' | 'internal';
+  gateway_config: GatewayConfig | null;
   price_provider: string | null;
   price_provider_id: string | null;
   is_active: boolean;
@@ -75,7 +80,7 @@ export function TokenDeploymentsTable() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [tokenStandardFilter, setTokenStandardFilter] = useState<string>('all');
-  const [plisioFilter, setPlisioFilter] = useState<string>('all');
+  const [gatewayFilter, setGatewayFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -89,8 +94,7 @@ export function TokenDeploymentsTable() {
 
       if (search) params.append('search', search);
       if (tokenStandardFilter !== 'all') params.append('token_standard', tokenStandardFilter);
-      if (plisioFilter === 'enabled') params.append('is_plisio', 'true');
-      if (plisioFilter === 'disabled') params.append('is_plisio', 'false');
+      if (gatewayFilter !== 'all') params.append('gateway', gatewayFilter);
       if (statusFilter === 'active') params.append('is_active', 'true');
       if (statusFilter === 'inactive') params.append('is_active', 'false');
 
@@ -112,7 +116,7 @@ export function TokenDeploymentsTable() {
 
   useEffect(() => {
     fetchDeployments();
-  }, [search, tokenStandardFilter, plisioFilter, statusFilter]);
+  }, [search, tokenStandardFilter, gatewayFilter, statusFilter]);
 
   const handleEdit = (deployment: TokenDeployment) => {
     setSelectedDeployment(deployment);
@@ -194,14 +198,15 @@ export function TokenDeploymentsTable() {
                   <SelectItem value="spl">SPL</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={plisioFilter} onValueChange={setPlisioFilter}>
+              <Select value={gatewayFilter} onValueChange={setGatewayFilter}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Plisio" />
+                  <SelectValue placeholder="Gateway" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="enabled">Plisio Enabled</SelectItem>
-                  <SelectItem value="disabled">Plisio Disabled</SelectItem>
+                  <SelectItem value="all">All Gateways</SelectItem>
+                  <SelectItem value="plisio">Plisio</SelectItem>
+                  <SelectItem value="nowpayments">NOWPayments</SelectItem>
+                  <SelectItem value="internal">Internal</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -230,7 +235,7 @@ export function TokenDeploymentsTable() {
                     <TableHead>Network</TableHead>
                     {/* <TableHead>Standard</TableHead> */}
                     {/* <TableHead>Contract</TableHead> */}
-                    <TableHead>Plisio</TableHead>
+                    <TableHead>Gateway</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -282,17 +287,15 @@ export function TokenDeploymentsTable() {
                           )}
                         </TableCell> */}
                         <TableCell>
-                          {deployment.is_plisio ? (
-                            <div className="flex items-center gap-1 text-green-500">
-                              <CheckCircle2 className="h-4 w-4" />
-                              <span className="text-xs">Enabled</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 text-text-tertiary">
-                              <XCircle className="h-4 w-4" />
-                              <span className="text-xs">Disabled</span>
-                            </div>
-                          )}
+                          <Badge variant={
+                            deployment.gateway === 'plisio' ? 'default' :
+                            deployment.gateway === 'nowpayments' ? 'secondary' :
+                            'outline'
+                          }>
+                            {deployment.gateway === 'plisio' ? 'Plisio' :
+                             deployment.gateway === 'nowpayments' ? 'NOWPayments' :
+                             'Internal'}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           {deployment.is_active ? (
