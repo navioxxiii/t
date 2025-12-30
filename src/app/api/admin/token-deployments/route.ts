@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     const baseTokenId = searchParams.get('base_token_id');
     const networkId = searchParams.get('network_id');
     const tokenStandard = searchParams.get('token_standard');
-    const isPlisio = searchParams.get('is_plisio');
+    const gateway = searchParams.get('gateway');
     const isActive = searchParams.get('is_active');
     const search = searchParams.get('search');
 
@@ -46,7 +46,7 @@ export async function GET(request: Request) {
       "baseTokenId": baseTokenId,
       "networkId": networkId,
       "tokenStandard": tokenStandard,
-      "isPlisio": isPlisio,
+      "gateway": gateway,
       "isActive": isActive,
       "search": search,
     });
@@ -82,8 +82,8 @@ export async function GET(request: Request) {
       query = query.eq('token_standard', tokenStandard);
     }
 
-    if (isPlisio !== null) {
-      query = query.eq('is_plisio', isPlisio === 'true');
+    if (gateway) {
+      query = query.eq('gateway', gateway);
     }
 
     if (isActive !== null) {
@@ -199,9 +199,8 @@ export async function POST(request: Request) {
         token_standard: body.token_standard,
         contract_address: body.contract_address || null,
         decimals: body.decimals || 18,
-        is_plisio: body.is_plisio || false,
-        plisio_cid: body.plisio_cid || null,
-        default_address: body.default_address || null,
+        gateway: body.gateway || 'internal',
+        gateway_config: body.gateway_config || null,
         price_provider: body.price_provider || null,
         price_provider_id: body.price_provider_id || null,
         is_active: body.is_active ?? true,

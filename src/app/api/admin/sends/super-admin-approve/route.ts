@@ -1,14 +1,16 @@
 /**
  * Super Admin Approve and Send API
- * Super Admin approves and actually sends the crypto via Plisio
+ * Super Admin approves and actually sends the crypto via payment gateways
+ * Supports multiple gateways: Plisio, NOWPayments
  * Next.js 15 compatible
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { plisio } from '@/lib/plisio/client';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { checkRateLimit, logRateLimitEvent, RATE_LIMITS } from '@/lib/security/rate-limiter';
-import { getPlisioCoinId } from '@/lib/plisio/config';
+import { getGatewayByConfig, supportsAutomatedWithdrawals } from '@/lib/gateways';
+import type { GatewayType, GatewayConfig } from '@/lib/gateways';
 
 export async function POST(request: NextRequest) {
   try {
@@ -228,36 +230,71 @@ export async function POST(request: NextRequest) {
         recipientTransactionId: recipientTransaction?.id,
       });
     } else {
-      // External withdrawal via Plisio
-      // Get Plisio currency ID
-      let psysCid: string;
+      // External withdrawal via payment gateway (Plisio or NOWPayments)
+      const adminClient = createAdminClient();
+
+      // Get token deployment to determine gateway
+      const { data: tokenDeployment, error: deploymentError } = await adminClient
+        .from('token_deployments')
+        .select('gateway, gateway_config')
+        .eq('id', transaction.token_deployment_id)
+        .single();
+
+      if (deploymentError || !tokenDeployment) {
+        console.error('Failed to get token deployment:', deploymentError);
+        return NextResponse.json(
+          { error: 'Token deployment not found' },
+          { status: 404 }
+        );
+      }
+
+      const gatewayType = tokenDeployment.gateway as GatewayType;
+      const gatewayConfig = tokenDeployment.gateway_config as GatewayConfig | null;
+
+      // Check if gateway supports automated withdrawals
+      if (!supportsAutomatedWithdrawals(gatewayType)) {
+        return NextResponse.json(
+          { error: `Gateway ${gatewayType} does not support automated withdrawals` },
+          { status: 400 }
+        );
+      }
+
+      // Get the gateway adapter
+      let gateway;
       try {
-        psysCid = getPlisioCoinId(withdrawalRequest.coin_symbol);
+        gateway = getGatewayByConfig(gatewayType, gatewayConfig);
       } catch (error) {
         return NextResponse.json(
           {
-            error: error instanceof Error ? error.message : 'Unsupported coin',
+            error: error instanceof Error ? error.message : 'Failed to initialize gateway',
           },
           { status: 400 }
         );
       }
 
-      // Send via Plisio
-      console.log('🚀 Sending via Plisio:', {
-        psysCid,
+      // Check if gateway is configured
+      if (!gateway.isConfigured()) {
+        return NextResponse.json(
+          { error: `Gateway ${gatewayType} is not configured` },
+          { status: 400 }
+        );
+      }
+
+      // Send via gateway
+      console.log(`🚀 Sending via ${gatewayType}:`, {
         to: withdrawalRequest.to_address,
         amount: withdrawalRequest.amount,
+        currency: withdrawalRequest.coin_symbol,
       });
 
-      const withdrawalResult = await plisio.withdraw({
-        psys_cid: psysCid,
-        to: withdrawalRequest.to_address,
-        amount: withdrawalRequest.amount,
-        feePlan: 'normal',
+      const withdrawalResult = await gateway.withdraw({
+        currency: withdrawalRequest.coin_symbol.toLowerCase(),
+        address: withdrawalRequest.to_address,
+        amount: parseFloat(withdrawalRequest.amount),
       });
 
-      if (withdrawalResult.status !== 'success') {
-        console.error('❌ Plisio withdrawal failed:', withdrawalResult);
+      if (!withdrawalResult.success) {
+        console.error(`❌ ${gatewayType} withdrawal failed:`, withdrawalResult.error);
 
         // Unlock balance without deducting (refund to user)
         await supabase.rpc('unlock_user_balance', {
@@ -279,14 +316,17 @@ export async function POST(request: NextRequest) {
           .from('transactions')
           .update({
             status: 'failed',
-            notes: `Failed to send via Plisio: ${JSON.stringify(withdrawalResult)}`,
+            notes: `Failed to send via ${gatewayType}: ${withdrawalResult.error}`,
           })
           .eq('id', transaction.id);
 
-        return NextResponse.json({ error: 'Failed to send via Plisio' }, { status: 500 });
+        return NextResponse.json(
+          { error: `Failed to send via ${gatewayType}: ${withdrawalResult.error}` },
+          { status: 500 }
+        );
       }
 
-      // Plisio withdrawal succeeded - unlock and deduct balance
+      // Withdrawal succeeded - unlock and deduct balance
       const { error: unlockError } = await supabase.rpc('unlock_user_balance', {
         p_user_id: withdrawalRequest.user_id,
         p_base_token_id: transaction.base_token_id,
@@ -296,11 +336,12 @@ export async function POST(request: NextRequest) {
 
       if (unlockError) {
         console.error('Failed to unlock balance after withdrawal:', unlockError);
-        // Plisio already sent - don't fail the whole process
+        // Gateway already sent - don't fail the whole process
         // Just log the error and continue
       }
 
-      txHash = withdrawalResult.data.id || withdrawalResult.data.tx_url;
+      txHash = withdrawalResult.transactionId || withdrawalResult.transactionHash || `${gatewayType}_${Date.now()}`;
+      console.log(`✅ ${gatewayType} withdrawal successful:`, { txHash });
     }
 
     // Update withdrawal request - mark as super admin approved and sent
