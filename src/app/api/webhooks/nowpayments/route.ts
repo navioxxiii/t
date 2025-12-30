@@ -293,7 +293,9 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      if (callback.payment_status === 'finished') {
+      if (callback.payment_status === 'finished' || callback.payment_status === 'partially_paid') {
+        const isPartialPayment = callback.payment_status === 'partially_paid';
+
         if (existingTx) {
           if (existingTx.status === 'completed') {
             console.log('⚠️  Invoice transaction already completed:', txHash);
@@ -308,7 +310,7 @@ export async function POST(request: NextRequest) {
             .update({
               status: 'completed',
               amount: amountStr,
-              notes: `Invoice deposit via NOWPayments - finished (payment_id: ${callback.payment_id})`,
+              notes: `Invoice deposit via NOWPayments - ${isPartialPayment ? 'partially_paid' : 'finished'} (payment_id: ${callback.payment_id})`,
               completed_at: new Date().toISOString(),
             })
             .eq('id', existingTx.id);
@@ -346,7 +348,7 @@ export async function POST(request: NextRequest) {
               tx_hash: txHash,
               to_address: depositPayment.pay_address,
               network_fee: '0',
-              notes: `Invoice deposit via NOWPayments - finished (payment_id: ${callback.payment_id})`,
+              notes: `Invoice deposit via NOWPayments - ${isPartialPayment ? 'partially_paid' : 'finished'} (payment_id: ${callback.payment_id})`,
               completed_at: new Date().toISOString(),
             })
             .select()
@@ -639,8 +641,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // FINISHED: Complete the deposit
-    if (callback.payment_status === 'finished') {
+    // FINISHED or PARTIALLY_PAID: Complete the deposit
+    if (callback.payment_status === 'finished' || callback.payment_status === 'partially_paid') {
+      const isPartialPayment = callback.payment_status === 'partially_paid';
+
       if (existingTx) {
         if (existingTx.status === 'completed') {
           console.log('⚠️  Transaction already completed:', txHash);
@@ -655,7 +659,7 @@ export async function POST(request: NextRequest) {
           .update({
             status: 'completed',
             amount: amountStr,
-            notes: `Deposit via NOWPayments - finished (payment_id: ${callback.payment_id})`,
+            notes: `Deposit via NOWPayments - ${isPartialPayment ? 'partially_paid' : 'finished'} (payment_id: ${callback.payment_id})`,
             completed_at: new Date().toISOString(),
           })
           .eq('id', existingTx.id);
@@ -704,7 +708,7 @@ export async function POST(request: NextRequest) {
             to_address: depositAddress.address,
             from_address: null,
             network_fee: '0',
-            notes: `Deposit via NOWPayments - finished (payment_id: ${callback.payment_id})`,
+            notes: `Deposit via NOWPayments - ${isPartialPayment ? 'partially_paid' : 'finished'} (payment_id: ${callback.payment_id})`,
             completed_at: new Date().toISOString(),
           })
           .select()
