@@ -1,10 +1,13 @@
 /**
  * Generate Deposit Addresses API Endpoint
  * Creates permanent cryptocurrency deposit addresses for users
- * Uses Plisio's deposit endpoint for Plisio coins - addresses never expire!
- * Uses default addresses for non-Plisio coins
  *
- * NEW: Uses centralized balance system
+ * Supports multiple payment gateways:
+ * - Plisio: Permanent addresses for BTC, ETH, LTC, etc.
+ * - NOWPayments: Permanent addresses for SOL, XRP, ADA
+ * - Internal: Shared default addresses for unsupported tokens
+ *
+ * Uses centralized balance system:
  * - Creates deposit_addresses (no balances stored here)
  * - Initializes zero balances in user_balances
  * - Creates preferences for all base tokens
@@ -13,7 +16,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { plisio } from '@/lib/plisio/client';
+import { getGatewayByConfig } from '@/lib/gateways';
+import type { GatewayType, GatewayConfig } from '@/lib/gateways';
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,9 +51,8 @@ export async function POST(request: NextRequest) {
         id,
         symbol,
         display_name,
-        is_plisio,
-        plisio_cid,
-        default_address,
+        gateway,
+        gateway_config,
         base_token_id,
         network_id,
         base_tokens (
@@ -106,61 +109,36 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        let address: string;
-        let isShared = false;
+        // Get the appropriate gateway adapter for this deployment
+        const gatewayType = deployment.gateway as GatewayType;
+        const gatewayConfig = deployment.gateway_config as GatewayConfig | null;
 
-        if (deployment.is_plisio) {
-          // Plisio-managed deployment: Generate unique address via Plisio API
-          console.log(
-            `Generating permanent ${deployment.symbol} address via Plisio for user ${user.id}...`
-          );
+        console.log(
+          `Generating ${deployment.symbol} address via ${gatewayType} gateway for user ${user.id}...`
+        );
 
-          if (!deployment.plisio_cid) {
-            console.error(`Missing plisio_cid for ${deployment.symbol}`);
-            errors.push({
-              deployment: deployment.symbol,
-              error: 'Missing Plisio CID configuration',
-            });
-            continue;
-          }
+        // Create gateway adapter and generate address
+        const gateway = getGatewayByConfig(gatewayType, gatewayConfig);
 
-          // Create permanent deposit address (never expires!)
-          const deposit = await plisio.createDeposit(deployment.plisio_cid, user.id);
-
-          if (deposit.status === 'success' && deposit.data.hash) {
-            address = deposit.data.hash;
-            console.log(
-              `✓ ${deployment.symbol} permanent address created via Plisio: ${address.slice(0, 12)}...`
-            );
-          } else {
-            console.error(`Plisio error for ${deployment.symbol}:`, deposit);
-            errors.push({
-              deployment: deployment.symbol,
-              error: 'Failed to generate deposit address from Plisio',
-            });
-            continue;
-          }
-        } else {
-          // Non-Plisio deployment: Use default shared address
-          console.log(
-            `Using default address for ${deployment.symbol} for user ${user.id}...`
-          );
-
-          if (!deployment.default_address) {
-            console.error(`Missing default_address for ${deployment.symbol}`);
-            errors.push({
-              deployment: deployment.symbol,
-              error: 'Missing default address configuration',
-            });
-            continue;
-          }
-
-          address = deployment.default_address;
-          isShared = true;
-          console.log(
-            `✓ ${deployment.symbol} address created with default: ${address.slice(0, 12)}...`
-          );
+        if (!gateway.isConfigured() && gatewayType !== 'internal') {
+          console.error(`Gateway ${gatewayType} is not configured for ${deployment.symbol}`);
+          errors.push({
+            deployment: deployment.symbol,
+            error: `Gateway ${gatewayType} is not configured`,
+          });
+          continue;
         }
+
+        // Generate deposit address via the gateway
+        const depositResult = await gateway.createDepositAddress(user.id);
+
+        const address = depositResult.address;
+        const isShared = depositResult.isShared;
+        const extraId = depositResult.extraId; // Destination tag for XRP, etc.
+
+        console.log(
+          `✓ ${deployment.symbol} address created via ${gatewayType}: ${address.slice(0, 12)}...${extraId ? ` (tag: ${extraId})` : ''}`
+        );
 
         // Save deposit address to database (NO balance here!)
         const { data: depositAddress, error } = await adminClient
@@ -169,8 +147,9 @@ export async function POST(request: NextRequest) {
             user_id: user.id,
             token_deployment_id: deployment.id,
             address: address,
+            extra_id: extraId || null, // Destination tag/memo for XRP, XLM, etc.
             is_shared: isShared,
-            is_permanent: true,
+            is_permanent: depositResult.isPermanent,
           })
           .select()
           .single();

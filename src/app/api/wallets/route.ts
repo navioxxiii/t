@@ -93,6 +93,7 @@ export async function GET(request: NextRequest) {
           .select(`
             id,
             address,
+            extra_id,
             is_shared,
             is_permanent,
             created_at,
@@ -161,6 +162,7 @@ export async function GET(request: NextRequest) {
             return {
               id: addr.id,
               address: addr.address,
+              extra_id: addr.extra_id || null, // Destination tag/memo for XRP, XLM, etc.
               is_shared: addr.is_shared,
               is_permanent: addr.is_permanent,
               created_at: addr.created_at,

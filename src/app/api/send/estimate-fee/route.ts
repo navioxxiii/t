@@ -44,15 +44,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get token deployment (includes base_token_id, network_id, and Plisio info)
+    // Get token deployment (includes base_token_id, network_id, and gateway info)
     const { data: deployment, error: deploymentError } = await supabase
       .from('token_deployments')
       .select(`
         id,
         symbol,
         display_name,
-        is_plisio,
-        plisio_cid,
+        gateway,
+        gateway_config,
         base_token_id,
         network_id,
         base_tokens (
