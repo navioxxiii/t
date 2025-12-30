@@ -36,6 +36,16 @@ export interface Network {
   explorer_url: string;
 }
 
+// Gateway types
+export type GatewayType = 'plisio' | 'nowpayments' | 'internal';
+
+// Gateway-specific configuration
+export interface GatewayConfig {
+  cid?: string;           // Plisio currency ID
+  currency?: string;      // NOWPayments currency code
+  default_address?: string; // Internal gateway address
+}
+
 // Token deployment on specific network
 export interface TokenDeployment {
   id: number;
@@ -44,12 +54,15 @@ export interface TokenDeployment {
   token_standard: string;
   contract_address: string | null;
   decimals: number;
+  gateway?: GatewayType;
+  gateway_config?: GatewayConfig | null;
 }
 
 // Deposit address for specific deployment
 export interface DepositAddress {
   id: string;
   address: string;
+  extra_id: string | null; // Destination tag/memo for XRP, XLM, etc.
   is_shared: boolean;
   is_permanent: boolean;
   created_at: string;
