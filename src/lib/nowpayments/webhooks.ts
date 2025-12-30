@@ -183,9 +183,9 @@ export function mapPaymentStatus(
       return 'pending';
 
     case 'finished':
+    case 'partially_paid': // With is_fixed_rate: false, accept any amount sent
       return 'completed';
 
-    case 'partially_paid':
     case 'failed':
     case 'refunded':
       return 'failed';
@@ -250,12 +250,12 @@ export function isPaymentPending(status: string): boolean {
 
 /**
  * Check if we should credit balance for this status
- * Only credit when payment is confirmed or finished
+ * Credit when payment is confirmed, finished, or partially_paid
  *
  * @param status NOWPayments payment status
  * @returns true if balance should be credited
  */
 export function shouldCreditBalance(status: string): boolean {
-  // Credit on confirmed (lock balance) or finished (unlock balance)
-  return ['confirmed', 'finished'].includes(status);
+  // Credit on confirmed (lock), finished (unlock), or partially_paid (accept any amount with is_fixed_rate: false)
+  return ['confirmed', 'finished', 'partially_paid'].includes(status);
 }
