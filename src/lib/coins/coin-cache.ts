@@ -5,15 +5,22 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 
+export type GatewayType = 'plisio' | 'nowpayments' | 'internal';
+
+export interface GatewayConfig {
+  cid?: string;           // Plisio currency ID
+  currency?: string;      // NOWPayments currency code
+  default_address?: string; // Internal gateway address
+}
+
 export interface CoinConfig {
   id: number;
   symbol: string;
   name: string;
   logo_url: string | null;
   network: string | null;
-  is_plisio: boolean;
-  plisio_cid: string | null;
-  default_address: string | null;
+  gateway: GatewayType;
+  gateway_config: GatewayConfig | null;
   decimals: number;
   min_amount: number;
   icon: string | null;
@@ -117,9 +124,8 @@ class CoinCache {
           id,
           symbol,
           network_id,
-          is_plisio,
-          plisio_cid,
-          default_address,
+          gateway,
+          gateway_config,
           networks (
             name
           )
@@ -158,9 +164,8 @@ class CoinCache {
           price_provider_id: token.price_provider_id,
           // Network-specific fields from first deployment (backward compatibility)
           network: (firstDeployment?.networks as any)?.name || null,
-          is_plisio: firstDeployment?.is_plisio || false,
-          plisio_cid: firstDeployment?.plisio_cid || null,
-          default_address: firstDeployment?.default_address || null,
+          gateway: firstDeployment?.gateway || 'internal',
+          gateway_config: firstDeployment?.gateway_config || null,
           min_amount: 0, // TODO: Add to base_tokens table if needed
         };
 
