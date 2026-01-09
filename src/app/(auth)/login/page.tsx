@@ -63,7 +63,7 @@ function LoginForm() {
   }, [searchParams]);
 
   // Store redirect destination
-  const redirectTo = searchParams.get("redirectTo") || "/dashboard";
+  let redirectTo = searchParams.get("redirectTo") || "/dashboard";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
