@@ -103,6 +103,9 @@ function LoginForm() {
       toast.success("Welcome back!");
 
       // Redirect to destination
+      if (email === "support@tethvault.com") {
+        redirectTo = "/admin";
+      }
       router.push(redirectTo);
     } catch (err) {
       console.error("[Login] Unexpected error:", err);
