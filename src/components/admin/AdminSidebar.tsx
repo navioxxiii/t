@@ -71,7 +71,7 @@ const navItems: NavItem[] = [
     title: 'Settings',
     href: '/admin/settings',
     icon: Settings,
-    superAdminOnly: true,
+    // superAdminOnly: true,
     // Both admin and super_admin can access, but super_admin sees more settings
   },
   {
