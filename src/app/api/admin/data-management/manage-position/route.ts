@@ -25,9 +25,15 @@ export async function POST(request: Request) {
     }
 
     const table = position_type === 'earn' ? 'user_earn_positions' : 'user_copy_positions';
-    const newStatus = action === 'force_mature' ? 'matured' : 'closed';
+    let newStatus: string;
+    if (action === 'force_mature') {
+      newStatus = position_type === 'earn' ? 'matured' : 'stopped';
+    } else {
+      // force_close
+      newStatus = position_type === 'earn' ? 'withdrawn' : 'stopped';
+    }
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from(table)
       .update({ status: newStatus, updated_at: new Date().toISOString() })
       .eq('id', position_id);
@@ -36,7 +42,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to update position' }, { status: 500 });
     }
 
-    await supabase.from('admin_action_logs').insert({
+    await supabaseAdmin.from('admin_action_logs').insert({
       admin_id: user.id,
       admin_email: profile.email,
       action_type: 'manage_position',
