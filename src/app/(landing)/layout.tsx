@@ -2,8 +2,6 @@
 
 import { Footer } from "@/components/landing/Footer";
 import { Navigation } from "@/components/landing/Navigation";
-import { ChatWidget } from "@/components/chat/ChatWidget";
-
 export default function LandingLayout({
   children,
 }: {
@@ -14,7 +12,6 @@ export default function LandingLayout({
       <Navigation />
       {children}
       <Footer />
-      <ChatWidget />
     </div>
   );
 }
