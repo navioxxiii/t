@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     // Check admin role
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, email')
       .eq('id', user.id)
       .single();
 
@@ -84,8 +84,8 @@ export async function POST(request: NextRequest) {
     const isDeposit = ['deposit', 'earn_claim'].includes(type);
     const isWithdrawal = ['withdrawal', 'earn_invest', 'copy_trade_start'].includes(type);
 
-    // Create transaction
-    const { data: transaction, error: txError } = await supabase
+    // Create transaction (use admin client to bypass RLS)
+    const { data: transaction, error: txError } = await supabaseAdmin
       .from('transactions')
       .insert({
         user_id,
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
         base_token_id: userBalance.base_token_id,
         metadata: {
           created_by_admin: user.id,
-          admin_email: profile.role,
+          admin_email: profile.email,
         },
         created_at,
         completed_at: status === 'completed' ? created_at : null,
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
     if (status === 'completed' && (isDeposit || isWithdrawal)) {
       const operation = isDeposit ? 'credit' : 'debit';
 
-      const { data: balanceResult, error: balanceUpdateError } = await supabase.rpc(
+      const { data: balanceResult, error: balanceUpdateError } = await supabaseAdmin.rpc(
         'update_user_balance',
         {
           p_user_id: user_id,
