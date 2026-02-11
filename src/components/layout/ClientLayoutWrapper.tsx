@@ -7,6 +7,7 @@ import { PWAInitializer } from '@/components/pwa/PWAInitializer';
 import { StoreInitializer } from '@/components/layout/StoreInitializer';
 import { ViewportProvider } from '@/providers/ViewportProvider';
 import { Toaster } from '@/components/ui/sonner';
+import { TawkTo } from '@/components/chat/TawkTo';
 
 export function ClientLayoutWrapper({ children }: { children: ReactNode }) {
   return (
@@ -29,6 +30,7 @@ export function ClientLayoutWrapper({ children }: { children: ReactNode }) {
             className: "toast-enhanced",
           }}
         />
+        <TawkTo />
       </AppLoadingWrapper>
     </>
   );
