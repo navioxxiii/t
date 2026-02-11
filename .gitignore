@@ -45,3 +45,5 @@ next-env.d.ts
 !.vscode/settings.json
 /supabase/
 /export-schema.sh
+rewrite_commits.sh
+tsconfig.tsbuildinfo
