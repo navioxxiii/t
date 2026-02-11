@@ -102,10 +102,19 @@ function LoginForm() {
       // Show success toast
       toast.success("Welcome back!");
 
-      // Redirect to destination
-      if (email === "support@tethvault.com") {
-        redirectTo = "/admin";
+      // Check if user is admin and should be redirected to admin panel
+      const { data: { user: signedInUser } } = await supabase.auth.getUser();
+      if (signedInUser && redirectTo === '/dashboard') {
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', signedInUser.id)
+          .single();
+        if (userProfile?.role === 'admin' || userProfile?.role === 'super_admin') {
+          redirectTo = '/admin';
+        }
       }
+
       router.push(redirectTo);
     } catch (err) {
       console.error("[Login] Unexpected error:", err);
