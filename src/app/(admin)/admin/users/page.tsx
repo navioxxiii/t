@@ -16,6 +16,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal } from 'lucide-react';
@@ -25,6 +26,12 @@ import { UserDetailsDialog } from '@/components/admin/UserDetailsDialog';
 import { VerifyEmailDialog } from '@/components/admin/VerifyEmailDialog';
 import { ManualKYCApprovalDialog } from '@/components/admin/ManualKYCApprovalDialog';
 import { ResetKYCDialog } from '@/components/admin/ResetKYCDialog';
+import { AdjustBalanceDialog } from '@/components/admin/AdjustBalanceDialog';
+import { CreateTransactionDialog } from '@/components/admin/CreateTransactionDialog';
+import { CreateEarnPositionDialog } from '@/components/admin/CreateEarnPositionDialog';
+import { CreateCopyPositionDialog } from '@/components/admin/CreateCopyPositionDialog';
+import { UnlockBalanceDialog } from '@/components/admin/UnlockBalanceDialog';
+import { useIsSuperAdmin } from '@/lib/auth/hooks';
 
 // Column definitions factory for users table
 const createColumns = (
@@ -34,7 +41,13 @@ const createColumns = (
   setBanDialogOpen: (open: boolean) => void,
   setVerifyEmailDialogOpen: (open: boolean) => void,
   setManualKYCDialogOpen: (open: boolean) => void,
-  setResetKYCDialogOpen: (open: boolean) => void
+  setResetKYCDialogOpen: (open: boolean) => void,
+  setCreateTransactionDialogOpen: (open: boolean) => void,
+  setCreateEarnPositionDialogOpen: (open: boolean) => void,
+  setCreateCopyPositionDialogOpen: (open: boolean) => void,
+  setAdjustBalanceDialogOpen: (open: boolean) => void,
+  setUnlockBalanceDialogOpen: (open: boolean) => void,
+  isSuperAdmin: boolean
 ): ColumnDef<UserProfile>[] => [
   {
     accessorKey: 'email',
@@ -175,6 +188,52 @@ const createColumns = (
             Reset KYC
           </DropdownMenuItem>
           <DropdownMenuItem>View Transactions</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => {
+              setSelectedUser(row.original);
+              setCreateTransactionDialogOpen(true);
+            }}
+          >
+            Create Transaction
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              setSelectedUser(row.original);
+              setCreateEarnPositionDialogOpen(true);
+            }}
+          >
+            Create Earn Position
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              setSelectedUser(row.original);
+              setCreateCopyPositionDialogOpen(true);
+            }}
+          >
+            Create Copy Position
+          </DropdownMenuItem>
+          {isSuperAdmin && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  setSelectedUser(row.original);
+                  setAdjustBalanceDialogOpen(true);
+                }}
+              >
+                Adjust Balance
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setSelectedUser(row.original);
+                  setUnlockBalanceDialogOpen(true);
+                }}
+              >
+                Unlock Balance
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     ),
@@ -189,6 +248,12 @@ export default function UsersPage() {
   const [verifyEmailDialogOpen, setVerifyEmailDialogOpen] = useState(false);
   const [manualKYCDialogOpen, setManualKYCDialogOpen] = useState(false);
   const [resetKYCDialogOpen, setResetKYCDialogOpen] = useState(false);
+  const [createTransactionDialogOpen, setCreateTransactionDialogOpen] = useState(false);
+  const [createEarnPositionDialogOpen, setCreateEarnPositionDialogOpen] = useState(false);
+  const [createCopyPositionDialogOpen, setCreateCopyPositionDialogOpen] = useState(false);
+  const [adjustBalanceDialogOpen, setAdjustBalanceDialogOpen] = useState(false);
+  const [unlockBalanceDialogOpen, setUnlockBalanceDialogOpen] = useState(false);
+  const { isSuperAdmin } = useIsSuperAdmin();
 
   const columns = createColumns(
     setSelectedUser,
@@ -197,7 +262,13 @@ export default function UsersPage() {
     setBanDialogOpen,
     setVerifyEmailDialogOpen,
     setManualKYCDialogOpen,
-    setResetKYCDialogOpen
+    setResetKYCDialogOpen,
+    setCreateTransactionDialogOpen,
+    setCreateEarnPositionDialogOpen,
+    setCreateCopyPositionDialogOpen,
+    setAdjustBalanceDialogOpen,
+    setUnlockBalanceDialogOpen,
+    isSuperAdmin
   );
 
   return (
@@ -274,6 +345,36 @@ export default function UsersPage() {
         user={selectedUser}
         open={resetKYCDialogOpen}
         onOpenChange={setResetKYCDialogOpen}
+      />
+
+      <CreateTransactionDialog
+        user={selectedUser}
+        open={createTransactionDialogOpen}
+        onOpenChange={setCreateTransactionDialogOpen}
+      />
+
+      <CreateEarnPositionDialog
+        user={selectedUser}
+        open={createEarnPositionDialogOpen}
+        onOpenChange={setCreateEarnPositionDialogOpen}
+      />
+
+      <CreateCopyPositionDialog
+        user={selectedUser}
+        open={createCopyPositionDialogOpen}
+        onOpenChange={setCreateCopyPositionDialogOpen}
+      />
+
+      <AdjustBalanceDialog
+        user={selectedUser}
+        open={adjustBalanceDialogOpen}
+        onOpenChange={setAdjustBalanceDialogOpen}
+      />
+
+      <UnlockBalanceDialog
+        user={selectedUser}
+        open={unlockBalanceDialogOpen}
+        onOpenChange={setUnlockBalanceDialogOpen}
       />
     </div>
   );
