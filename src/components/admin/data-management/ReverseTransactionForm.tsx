@@ -65,7 +65,7 @@ export function ReverseTransactionForm() {
       return;
     }
 
-    if (transactionDetails.status === 'reversed') {
+    if (transactionDetails.status === 'cancelled') {
       toast.error('This transaction has already been reversed');
       return;
     }
@@ -163,8 +163,8 @@ export function ReverseTransactionForm() {
                 <span className="font-medium">{transactionDetails.status}</span>
               </div>
               <div>
-                <span className="text-text-tertiary">Amount USD:</span>{' '}
-                <span className="font-medium">${transactionDetails.amount_usd}</span>
+                <span className="text-text-tertiary">Amount:</span>{' '}
+                <span className="font-medium">${transactionDetails.amount}</span>
               </div>
               <div>
                 <span className="text-text-tertiary">User:</span>{' '}

@@ -55,20 +55,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
     }
 
-    // Check if already reversed
-    if (originalTx.status === 'reversed') {
+    // Check if already cancelled/reversed
+    if (originalTx.status === 'cancelled') {
       return NextResponse.json(
         { error: 'Transaction has already been reversed' },
         { status: 400 }
       );
     }
 
-    // Mark original transaction as reversed
-    const { error: updateError } = await supabase
+    // Mark original transaction as cancelled (use admin client to bypass RLS)
+    const { error: updateError } = await supabaseAdmin
       .from('transactions')
       .update({
-        status: 'reversed',
-        updated_at: new Date().toISOString(),
+        status: 'cancelled',
       })
       .eq('id', transaction_id);
 
@@ -77,16 +76,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to update transaction' }, { status: 500 });
     }
 
-    // Create compensating transaction (opposite sign)
-    const { data: reversalTx, error: reversalError } = await supabase
+    // Create compensating transaction (opposite type)
+    const reversalType = originalTx.type === 'deposit' ? 'withdrawal' : 'deposit';
+    const { data: reversalTx, error: reversalError } = await supabaseAdmin
       .from('transactions')
       .insert({
         user_id: originalTx.user_id,
-        type: 'reversal',
+        type: reversalType,
+        amount: originalTx.amount,
+        coin_symbol: originalTx.coin_symbol,
         status: 'completed',
-        amount_usd: -originalTx.amount_usd, // Opposite sign
-        original_transaction_id: transaction_id,
+        notes: `Reversal of transaction ${transaction_id}. Reason: ${reason}`,
+        base_token_id: originalTx.base_token_id,
+        metadata: { reversal: true, original_transaction_id: transaction_id, admin_id: user.id },
         created_at: new Date().toISOString(),
+        completed_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -96,8 +100,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to create reversal transaction' }, { status: 500 });
     }
 
+    // Reverse the balance effect of the original transaction
+    if (originalTx.status === 'completed' && originalTx.base_token_id) {
+      const isOriginalDeposit = ['deposit', 'earn_claim'].includes(originalTx.type);
+      const isOriginalWithdrawal = ['withdrawal', 'earn_invest', 'copy_trade_start'].includes(originalTx.type);
+
+      if (isOriginalDeposit || isOriginalWithdrawal) {
+        // Reverse: if original was deposit (credit), now debit; if withdrawal (debit), now credit
+        const operation = isOriginalDeposit ? 'debit' : 'credit';
+
+        await supabaseAdmin.rpc('update_user_balance', {
+          p_user_id: originalTx.user_id,
+          p_base_token_id: originalTx.base_token_id,
+          p_amount: parseFloat(originalTx.amount),
+          p_operation: operation,
+        });
+      }
+    }
+
     // Log admin action
-    await supabase.from('admin_action_logs').insert({
+    await supabaseAdmin.from('admin_action_logs').insert({
       admin_id: user.id,
       admin_email: profile.email,
       action_type: 'transaction_reversal',
@@ -106,7 +128,7 @@ export async function POST(request: Request) {
       details: {
         original_transaction_id: transaction_id,
         reversal_transaction_id: reversalTx.id,
-        original_amount: originalTx.amount_usd,
+        original_amount: originalTx.amount,
         original_type: originalTx.type,
         reason,
         notes,
