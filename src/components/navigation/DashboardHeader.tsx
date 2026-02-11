@@ -13,7 +13,6 @@ import UserMenu from './UserMenu';
 import { branding } from '@/config/branding';
 import { haptics } from '@/lib/utils/haptics';
 import { cn } from '@/lib/utils';
-import { useChatStore } from '@/stores/chatStore';
 import { TokenPreferencesDialog } from '@/components/dashboard/TokenPreferencesDialog';
 
 const routeTitles: Record<string, string> = {
@@ -37,7 +36,6 @@ const routeParents: Record<string, string> = {};
 export function DashboardHeader({ className, onSupportClick }: DashboardHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const unreadCount = useChatStore((state) => state.unreadCount);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
 
   // Determine title based on current route
@@ -129,11 +127,6 @@ export function DashboardHeader({ className, onSupportClick }: DashboardHeaderPr
                 aria-label="Open support chat"
               >
                 <MessageCircle className="w-5 h-5 text-text-primary" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
               </button>
             )}
             <UserMenu />

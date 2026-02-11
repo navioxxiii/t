@@ -6,13 +6,10 @@ import { KYCStatusBanner } from "@/components/kyc/KYCStatusBanner";
 import { BottomNav } from "@/components/navigation/BottomNav";
 import { DashboardHeader } from "@/components/navigation/DashboardHeader";
 import { AppLockWrapper } from "@/components/security/AppLockWrapper";
-import { ChatWidget } from "@/components/chat/ChatWidget";
-import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useGlobalPresence } from "@/hooks/useGlobalPresence";
 
 export default function DashboardLayoutClient({ children }: { children: React.ReactNode }) {
-  const setChatOpen = useChatStore((state) => state.setChatOpen);
   const user = useAuthStore((state) => state.user);
   const profile = useAuthStore((state) => state.profile);
 
@@ -21,7 +18,7 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
 
   return (
     <div className="min-h-screen flex flex-col relative h-screen-ios">
-      <DashboardHeader onSupportClick={() => setChatOpen(true)} />
+      <DashboardHeader onSupportClick={() => window.Tawk_API?.maximize?.()} />
       <AppLockWrapper>
         <KYCGate>
           <div className="bg-bg-primary">
@@ -34,7 +31,6 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
         </KYCGate>
       </AppLockWrapper>
       <BottomNav />
-      <ChatWidget />
     </div>
   );
 }
