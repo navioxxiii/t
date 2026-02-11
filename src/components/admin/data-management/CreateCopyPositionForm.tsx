@@ -36,12 +36,18 @@ const POSITION_STATUS = [
   { value: 'stopped', label: 'Stopped' },
 ];
 
-export function CreateCopyPositionForm() {
+interface CreateCopyPositionFormProps {
+  userId?: string;
+  userEmail?: string;
+  onSuccess?: () => void;
+}
+
+export function CreateCopyPositionForm({ userId, userEmail, onSuccess }: CreateCopyPositionFormProps = {}) {
   const [loading, setLoading] = useState(false);
   const [traders, setTraders] = useState<Trader[]>([]);
   const [loadingTraders, setLoadingTraders] = useState(false);
   const [formData, setFormData] = useState({
-    user_id: '',
+    user_id: userId || '',
     trader_id: '',
     allocation_usdt: '',
     status: 'active',
@@ -96,10 +102,11 @@ export function CreateCopyPositionForm() {
       }
 
       toast.success('Copy position created successfully. Balance deducted and trader stats updated.');
+      onSuccess?.();
 
       // Reset form
       setFormData({
-        user_id: '',
+        user_id: userId || '',
         trader_id: '',
         allocation_usdt: '',
         status: 'active',
@@ -120,10 +127,14 @@ export function CreateCopyPositionForm() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2 md:col-span-2">
           <Label>User *</Label>
-          <UserSelector
-            value={formData.user_id}
-            onValueChange={(value) => setFormData({ ...formData, user_id: value })}
-          />
+          {userId ? (
+            <Input value={userEmail || userId} disabled />
+          ) : (
+            <UserSelector
+              value={formData.user_id}
+              onValueChange={(value) => setFormData({ ...formData, user_id: value })}
+            />
+          )}
         </div>
 
         <div className="space-y-2 md:col-span-2">

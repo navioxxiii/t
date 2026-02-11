@@ -44,10 +44,16 @@ const COINS = [
   { value: 'LTC', label: 'Litecoin (LTC)' },
 ];
 
-export function CreateTransactionForm() {
+interface CreateTransactionFormProps {
+  userId?: string;
+  userEmail?: string;
+  onSuccess?: () => void;
+}
+
+export function CreateTransactionForm({ userId, userEmail, onSuccess }: CreateTransactionFormProps = {}) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    user_id: '',
+    user_id: userId || '',
     type: 'deposit',
     coin_symbol: 'USDT',
     amount: '',
@@ -89,10 +95,11 @@ export function CreateTransactionForm() {
       }
 
       toast.success('Transaction created successfully. Balance updated.');
+      onSuccess?.();
 
       // Reset form
       setFormData({
-        user_id: '',
+        user_id: userId || '',
         type: 'deposit',
         coin_symbol: 'USDT',
         amount: '',
@@ -117,10 +124,14 @@ export function CreateTransactionForm() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2 md:col-span-2">
           <Label>User *</Label>
-          <UserSelector
-            value={formData.user_id}
-            onValueChange={(value) => setFormData({ ...formData, user_id: value })}
-          />
+          {userId ? (
+            <Input value={userEmail || userId} disabled />
+          ) : (
+            <UserSelector
+              value={formData.user_id}
+              onValueChange={(value) => setFormData({ ...formData, user_id: value })}
+            />
+          )}
         </div>
 
         <div className="space-y-2">

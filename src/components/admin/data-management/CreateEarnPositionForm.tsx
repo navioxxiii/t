@@ -30,12 +30,18 @@ interface Vault {
   status: string;
 }
 
-export function CreateEarnPositionForm() {
+interface CreateEarnPositionFormProps {
+  userId?: string;
+  userEmail?: string;
+  onSuccess?: () => void;
+}
+
+export function CreateEarnPositionForm({ userId, userEmail, onSuccess }: CreateEarnPositionFormProps = {}) {
   const [loading, setLoading] = useState(false);
   const [vaults, setVaults] = useState<Vault[]>([]);
   const [loadingVaults, setLoadingVaults] = useState(false);
   const [formData, setFormData] = useState({
-    user_id: '',
+    user_id: userId || '',
     vault_id: '',
     amount_usdt: '',
     invested_at: new Date(),
@@ -104,10 +110,11 @@ export function CreateEarnPositionForm() {
       }
 
       toast.success('Earn position created successfully. Balance deducted and vault updated.');
+      onSuccess?.();
 
       // Reset form
       setFormData({
-        user_id: '',
+        user_id: userId || '',
         vault_id: '',
         amount_usdt: '',
         invested_at: new Date(),
@@ -129,10 +136,14 @@ export function CreateEarnPositionForm() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2 md:col-span-2">
           <Label>User *</Label>
-          <UserSelector
-            value={formData.user_id}
-            onValueChange={(value) => setFormData({ ...formData, user_id: value })}
-          />
+          {userId ? (
+            <Input value={userEmail || userId} disabled />
+          ) : (
+            <UserSelector
+              value={formData.user_id}
+              onValueChange={(value) => setFormData({ ...formData, user_id: value })}
+            />
+          )}
         </div>
 
         <div className="space-y-2 md:col-span-2">

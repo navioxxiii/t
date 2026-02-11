@@ -12,10 +12,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Lock } from 'lucide-react';
 
-export function UnlockBalanceForm() {
+interface UnlockBalanceFormProps {
+  userEmail?: string;
+  onSuccess?: () => void;
+}
+
+export function UnlockBalanceForm({ userEmail, onSuccess }: UnlockBalanceFormProps = {}) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    user_email: '',
+    user_email: userEmail || '',
     base_token_code: 'usdt',
     amount: '',
     reason: '',
@@ -39,7 +44,8 @@ export function UnlockBalanceForm() {
       const data = await response.json();
       if (response.ok) {
         toast.success('Balance unlocked successfully!');
-        setFormData({ user_email: '', base_token_code: 'usdt', amount: '', reason: '' });
+        onSuccess?.();
+        setFormData({ user_email: userEmail || '', base_token_code: 'usdt', amount: '', reason: '' });
       } else {
         toast.error(data.error || 'Failed to unlock balance');
       }
@@ -67,7 +73,7 @@ export function UnlockBalanceForm() {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>User Email *</Label>
-          <Input type="email" value={formData.user_email} onChange={(e) => setFormData({ ...formData, user_email: e.target.value })} required />
+          <Input type="email" value={formData.user_email} onChange={(e) => setFormData({ ...formData, user_email: e.target.value })} required disabled={!!userEmail} />
         </div>
 
         <div className="space-y-2">

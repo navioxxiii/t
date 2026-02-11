@@ -21,10 +21,15 @@ import {
 import { toast } from 'sonner';
 import { AlertCircle } from 'lucide-react';
 
-export function AdjustBalanceForm() {
+interface AdjustBalanceFormProps {
+  userEmail?: string;
+  onSuccess?: () => void;
+}
+
+export function AdjustBalanceForm({ userEmail, onSuccess }: AdjustBalanceFormProps = {}) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    user_email: '',
+    user_email: userEmail || '',
     base_token_code: 'usdt',
     adjustment_amount: '',
     adjustment_type: 'add',
@@ -70,10 +75,11 @@ export function AdjustBalanceForm() {
       }
 
       toast.success(`Balance adjusted successfully! New balance: ${data.new_balance}`);
+      onSuccess?.();
 
       // Reset form
       setFormData({
-        user_email: '',
+        user_email: userEmail || '',
         base_token_code: 'usdt',
         adjustment_amount: '',
         adjustment_type: 'add',
@@ -117,6 +123,7 @@ export function AdjustBalanceForm() {
             value={formData.user_email}
             onChange={(e) => setFormData({ ...formData, user_email: e.target.value })}
             required
+            disabled={!!userEmail}
           />
         </div>
 
