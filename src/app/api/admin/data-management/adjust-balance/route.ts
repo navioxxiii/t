@@ -76,7 +76,7 @@ export async function POST(request: Request) {
 
     const currentTotal = currentBalance ? parseFloat(currentBalance.balance) : 0;
     const locked = currentBalance ? parseFloat(currentBalance.locked_balance) : 0;
-
+console.log(`[Admin Adjustment] Current balance for ${targetUser.email} (${baseToken.symbol}): ${currentTotal} (locked: ${locked})`);
     // Calculate new balance
     const adjustmentAmountNum = parseFloat(adjustment_amount);
     const newBalance =
@@ -91,8 +91,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Update balance
-    const { error: balanceError } = await supabase
+    // Update balance (use admin client to bypass RLS)
+    const { error: balanceError } = await supabaseAdmin
       .from('user_balances')
       .upsert({
         user_id: targetUser.id,
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
         balance: newBalance.toString(),
         locked_balance: locked.toString(),
         updated_at: new Date().toISOString(),
-      });
+      }, { onConflict: 'user_id,base_token_id' });
 
     if (balanceError) {
       console.error('Error updating balance:', balanceError);
@@ -108,12 +108,17 @@ export async function POST(request: Request) {
     }
 
     // Create transaction record for audit trail
-    const { error: txError } = await supabase.from('transactions').insert({
+    const { error: txError } = await supabaseAdmin.from('transactions').insert({
       user_id: targetUser.id,
-      type: 'admin_adjustment',
+      type: adjustment_type === 'add' ? 'deposit' : 'withdrawal',
+      amount: adjustmentAmountNum,
+      coin_symbol: baseToken.symbol,
       status: 'completed',
-      amount_usd: adjustment_type === 'add' ? adjustmentAmountNum : -adjustmentAmountNum,
+      notes: `Admin balance adjustment: ${reason}. ${notes || ''}`.trim(),
+      base_token_id: baseToken.id,
+      metadata: { admin_adjustment: true, admin_id: user.id, admin_email: profile.email, reason },
       created_at: new Date().toISOString(),
+      completed_at: new Date().toISOString(),
     });
 
     if (txError) {
@@ -121,7 +126,7 @@ export async function POST(request: Request) {
     }
 
     // Log admin action
-    await supabase.from('admin_action_logs').insert({
+    await supabaseAdmin.from('admin_action_logs').insert({
       admin_id: user.id,
       admin_email: profile.email,
       action_type: 'balance_adjustment',
