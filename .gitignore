@@ -47,3 +47,4 @@ next-env.d.ts
 /export-schema.sh
 rewrite_commits.sh
 tsconfig.tsbuildinfo
+docs
