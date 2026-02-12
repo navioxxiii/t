@@ -9,6 +9,7 @@ import { Users, Send, ArrowDownLeft, Clock, MessageSquare, AlertCircle } from 'l
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { OnlineUsersWidget } from '@/components/admin/OnlineUsersWidget';
+import { GatewayBalancesWidget } from '@/components/admin/GatewayBalancesWidget';
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
@@ -155,6 +156,9 @@ export default async function AdminDashboardPage() {
           </Link>
         </CardContent>
       </Card>
+
+      {/* Gateway Balances */}
+      <GatewayBalancesWidget />
 
       {/* Online Users */}
       <OnlineUsersWidget />
