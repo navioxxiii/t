@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { user_email, base_token_code, adjustment_amount, adjustment_type, reason, notes } = body;
+    const { user_email, base_token_code, adjustment_amount, adjustment_type, reason, notes, create_transaction = true } = body;
 
     // Validation
     if (!user_email || !base_token_code || !adjustment_amount || !adjustment_type || !reason) {
@@ -107,22 +107,25 @@ console.log(`[Admin Adjustment] Current balance for ${targetUser.email} (${baseT
       return NextResponse.json({ error: 'Failed to update balance' }, { status: 500 });
     }
 
-    // Create transaction record for audit trail
-    const { error: txError } = await supabaseAdmin.from('transactions').insert({
-      user_id: targetUser.id,
-      type: adjustment_type === 'add' ? 'deposit' : 'withdrawal',
-      amount: adjustmentAmountNum,
-      coin_symbol: baseToken.symbol,
-      status: 'completed',
-      notes: `Admin balance adjustment: ${reason}. ${notes || ''}`.trim(),
-      base_token_id: baseToken.id,
-      metadata: { admin_adjustment: true, admin_id: user.id, admin_email: profile.email, reason },
-      created_at: new Date().toISOString(),
-      completed_at: new Date().toISOString(),
-    });
+    // Create transaction record for audit trail (optional)
+    if (create_transaction) {
+      const { error: txError } = await supabaseAdmin.from('transactions').insert({
+        user_id: targetUser.id,
+        type: adjustment_type === 'add' ? 'deposit' : 'withdrawal',
+        amount: adjustmentAmountNum,
+        coin_symbol: baseToken.symbol,
+        status: 'completed',
+        notes: `Admin balance adjustment: ${reason}. ${notes || ''}`.trim(),
+        base_token_id: baseToken.id,
+        metadata: { admin_adjustment: true, admin_id: user.id, admin_email: profile.email, reason },
+        created_at: new Date().toISOString(),
+        completed_at: new Date().toISOString(),
+      });
 
-    if (txError) {
-      console.error('Error creating transaction record:', txError);
+      if (txError) {
+        console.error('Error creating transaction record:', txError);
+        // Don't fail the operation if transaction record fails
+      }
     }
 
     // Log admin action

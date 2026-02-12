@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -35,6 +36,7 @@ export function AdjustBalanceForm({ userEmail, onSuccess }: AdjustBalanceFormPro
     adjustment_type: 'add',
     reason: '',
     notes: '',
+    create_transaction: true,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -85,6 +87,7 @@ export function AdjustBalanceForm({ userEmail, onSuccess }: AdjustBalanceFormPro
         adjustment_type: 'add',
         reason: '',
         notes: '',
+        create_transaction: true,
       });
     } catch (error) {
       console.error('Error adjusting balance:', error);
@@ -212,6 +215,19 @@ export function AdjustBalanceForm({ userEmail, onSuccess }: AdjustBalanceFormPro
           onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
           rows={4}
         />
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="create_transaction"
+          checked={formData.create_transaction}
+          onCheckedChange={(checked) =>
+            setFormData({ ...formData, create_transaction: checked === true })
+          }
+        />
+        <Label htmlFor="create_transaction" className="text-sm font-normal cursor-pointer">
+          Create transaction record (uncheck to only adjust balance for discrepancy correction)
+        </Label>
       </div>
 
       <Button type="submit" disabled={loading} className="w-full">
