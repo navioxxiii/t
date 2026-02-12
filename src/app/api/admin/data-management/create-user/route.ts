@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-const newUserId = newUserData.user.id;
+    const newUserId = newUserData.user.id;
 
     // ⚠️ AUDIT: Store temporary password for compliance (encrypted)
     try {
@@ -136,17 +136,27 @@ const newUserId = newUserData.user.id;
       updated_at: finalCreatedAt.toISOString(),
     });
 
-if (profileError) {
-  console.error('Profile creation failed:', profileError);
+    if (profileError) {
+      console.error('Profile creation failed:', profileError);
 
-  // ALWAYS rollback the auth user if profile fails
-  await supabaseAdmin.auth.admin.deleteUser(newUserId).catch(console.error);
+      // ALWAYS rollback the auth user if profile fails
+      await supabaseAdmin.auth.admin.deleteUser(newUserId).catch(console.error);
 
-  return NextResponse.json(
-    { error: 'Failed to create profile', details: profileError.message },
-    { status: 500 }
-  );
-}
+      // Check if it's a duplicate key error (orphaned profile from previous attempt)
+      if (profileError.message?.includes('duplicate key') ||
+          profileError.message?.includes('profiles_pkey') ||
+          profileError.code === '23505') {
+        return NextResponse.json(
+          { error: 'User profile already exists. Please contact support to resolve this data inconsistency.' },
+          { status: 409 }
+        );
+      }
+
+      return NextResponse.json(
+        { error: 'Failed to create profile', details: profileError.message },
+        { status: 500 }
+      );
+    }
 
     // Create user balances for default tokens
     const { data: baseTokens, error: tokensError } = await supabaseAdmin
