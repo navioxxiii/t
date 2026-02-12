@@ -15,7 +15,7 @@ export default async function AdminDashboardPage() {
   const supabase = await createClient();
 
   // Get statistics
-  const [usersCount, pendingSendsCount, depositsCount, sendsCount, openTicketsCount, unreadMessagesCount] = await Promise.all([
+  const [usersCount, pendingSendsCount, depositsCount, sendsCount] = await Promise.all([
     // Total users
     supabase.from('profiles').select('id', { count: 'exact', head: true }),
     // Pending sends
@@ -35,6 +35,7 @@ export default async function AdminDashboardPage() {
       .select('id', { count: 'exact', head: true })
       .eq('type', 'withdrawal')
       .eq('status', 'completed'),
+    /* ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO - Queries commented out
     // Open support tickets (excluding deleted)
     supabase
       .from('support_tickets')
@@ -47,6 +48,7 @@ export default async function AdminDashboardPage() {
       .select('id', { count: 'exact', head: true })
       .eq('is_read', false)
       .eq('from_admin', false),
+    */
   ]);
 
   const stats = [
@@ -76,6 +78,7 @@ export default async function AdminDashboardPage() {
       icon: Send,
       description: 'Completed sends',
     },
+    /* ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO - Stat cards commented out
     {
       title: 'Open Tickets',
       value: openTicketsCount.count || 0,
@@ -92,6 +95,7 @@ export default async function AdminDashboardPage() {
       href: '/admin/support',
       urgent: (unreadMessagesCount.count || 0) > 0,
     },
+    */
   ];
 
   return (

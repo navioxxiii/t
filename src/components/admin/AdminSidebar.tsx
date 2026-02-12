@@ -79,11 +79,13 @@ const navItems: NavItem[] = [
     href: '/admin/kyc',
     icon: ShieldCheck,
   },
+  /* ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO - Support link commented out
   {
     title: 'Support',
     href: '/admin/support',
     icon: MessageSquare,
   },
+  */
   {
     title: 'Data Management',
     href: '/admin/data-management',
@@ -98,7 +100,7 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ isSuperAdmin = false }: AdminSidebarProps) {
   const pathname = usePathname();
-  const { unreadMessagesCount } = useAdminSupportNotifications();
+  const { unreadCount } = useAdminSupportNotifications();
 
   const filteredItems = navItems.filter((item) => {
     if (item.superAdminOnly && !isSuperAdmin) return false;
@@ -130,7 +132,7 @@ export function AdminSidebar({ isSuperAdmin = false }: AdminSidebarProps) {
             ? pathname.startsWith(item.href)
             : pathname === item.href;
           // Show badge for support link if there are unread messages
-          const showBadge = item.href === '/admin/support' && unreadMessagesCount > 0;
+          const showBadge = item.href === '/admin/support' && unreadCount > 0;
 
           return (
             <Link
@@ -147,7 +149,7 @@ export function AdminSidebar({ isSuperAdmin = false }: AdminSidebarProps) {
               <span className="flex-1">{item.title}</span>
               {showBadge && (
                 <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
-                  {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+                  {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
             </Link>

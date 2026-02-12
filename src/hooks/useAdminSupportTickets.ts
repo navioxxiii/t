@@ -1,73 +1,38 @@
 /**
  * useAdminSupportTickets Hook
- * Fetches and subscribes to real-time updates for admin support tickets
+ * ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO
+ * This hook has been disabled. Original implementation preserved in git history.
  */
 
 'use client';
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createClient } from '@/lib/supabase/client';
-import { useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 export function useAdminSupportTickets(
-  statusFilter: string,
-  priorityFilter: string,
-  categoryFilter: string,
-  showDeleted: boolean,
-  debouncedSearch: string
+  _status: string,
+  _priority: string,
+  _category: string,
+  _showDeleted: boolean,
+  _search: string
 ) {
-  const queryClient = useQueryClient();
-
-  const queryKey = useMemo(() => ['admin-support-tickets', statusFilter, priorityFilter, categoryFilter, showDeleted, debouncedSearch], [statusFilter, priorityFilter, categoryFilter, showDeleted, debouncedSearch]);
-
-  const { data, isLoading, isError } = useQuery({
-    queryKey,
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (statusFilter !== 'all') params.append('status', statusFilter);
-      if (priorityFilter !== 'all') params.append('priority', priorityFilter);
-      if (categoryFilter !== 'all') params.append('category', categoryFilter);
-      if (showDeleted) params.append('show_deleted', 'true');
-      if (debouncedSearch) params.append('search', debouncedSearch);
-
-      const response = await fetch(`/api/admin/support/tickets?${params.toString()}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch tickets');
-      }
-      return response.json();
-    },
+  return useQuery({
+    queryKey: ['admin-support-tickets'],
+    queryFn: async () => ({ tickets: [] }),
+    enabled: false,
   });
-
-  useEffect(() => {
-    const supabase = createClient();
-
-    const handleChanges = () => {
-      queryClient.invalidateQueries({ queryKey });
-    };
-
-    const ticketsSubscription = supabase
-      .channel('support_tickets-admin')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'support_tickets' },
-        handleChanges
-      )
-      .subscribe();
-
-    const messagesSubscription = supabase
-      .channel('ticket_messages-admin')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'ticket_messages' },
-        handleChanges
-      )
-      .subscribe();
-
-    return () => {
-      ticketsSubscription.unsubscribe();
-      messagesSubscription.unsubscribe();
-    };
-  }, [queryClient, queryKey]);
-
-  return { data, isLoading, isError };
 }
+
+/* ============================================================================
+ * ORIGINAL IMPLEMENTATION (COMMENTED OUT - MIGRATED TO TAWK.TO)
+ * ============================================================================
+ *
+ * This hook fetched and filtered admin support tickets with real-time updates.
+ * Features included:
+ * - Advanced filtering (status, priority, category, search)
+ * - Soft-deleted ticket visibility for super admins
+ * - Real-time invalidation on changes
+ * - Optimized query performance
+ *
+ * See git history to restore the full implementation.
+ *
+ * ============================================================================ */
