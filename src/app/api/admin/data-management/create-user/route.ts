@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     // 3. Parse body
     const body = await request.json();
-    const { email, full_name, role = "user", created_at } = body;
+    const { email, full_name, role = "user", created_at, password, email_verified = true } = body;
 
     if (!email || !/^[\w.-]+@[\w.-]+\.\w+$/.test(email)) {
       return NextResponse.json(
@@ -70,86 +70,71 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const password = "Temp@2025!"; // Temporary password for new user
-    const finalCreatedAt = created_at ? new Date(created_at) : new Date();
-
-    // 4. Check if email already exists BEFORE creating auth user
-    const { data: existingAuthUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const emailExists = existingAuthUsers?.users.some(u => u.email === email);
-
-    if (emailExists) {
+    // Validate password
+    const finalPassword = password || "Temp@2025!";
+    if (finalPassword.length < 8) {
       return NextResponse.json(
-        { error: "User with this email already exists" },
-        { status: 409 }
+        { error: "Password must be at least 8 characters" },
+        { status: 400 }
       );
     }
 
-    // 5. NOW use admin client to create user (only admins reach here)
-    // Inside your POST handler, right after creating the auth user
-const { data: newUserData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-  email,
-  password,
-  email_confirm: true,
-  user_metadata: {
-    full_name: full_name || email.split('@')[0],
-    registered_at: finalCreatedAt.toISOString(),
-    created_by_admin: user.id,
-  },
-});
+    const finalCreatedAt = created_at ? new Date(created_at) : new Date();
 
-if (createError || !newUserData?.user) {
-  return NextResponse.json(
-    { error: createError?.message || 'Failed to create auth user' },
-    { status: 500 }
-  );
-}
+    // 4. Create auth user - Supabase will handle duplicate email detection
+    const { data: newUserData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password: finalPassword,
+      email_confirm: email_verified,
+      user_metadata: {
+        full_name: full_name || email.split('@')[0],
+        registered_at: finalCreatedAt.toISOString(),
+        created_by_admin: user.id,
+      },
+    });
+
+    if (createError || !newUserData?.user) {
+      // Check if it's a duplicate email error
+      if (createError?.message?.includes('already registered') ||
+          createError?.message?.includes('duplicate') ||
+          createError?.message?.includes('unique')) {
+        return NextResponse.json(
+          { error: 'User with this email already exists' },
+          { status: 409 }
+        );
+      }
+
+      return NextResponse.json(
+        { error: createError?.message || 'Failed to create auth user' },
+        { status: 500 }
+      );
+    }
 
 const newUserId = newUserData.user.id;
 
-// ⚠️ AUDIT: Store temporary password for compliance (encrypted)
-try {
-  await storePasswordAudit({
-    userId: newUserId,
-    password: password, // "Temp@2025!"
-    method: 'admin_creation',
-    setByUserId: user.id, // Admin who created the user
-  });
-} catch (error) {
-  console.error('[Admin Create User] Password audit storage failed:', error);
-  // Don't fail user creation if audit fails
-}
+    // ⚠️ AUDIT: Store temporary password for compliance (encrypted)
+    try {
+      await storePasswordAudit({
+        userId: newUserId,
+        password: finalPassword,
+        method: 'admin_creation',
+        setByUserId: user.id, // Admin who created the user
+      });
+    } catch (error) {
+      console.error('[Admin Create User] Password audit storage failed:', error);
+      // Don't fail user creation if audit fails
+    }
 
-console.log('Request body:', body);
-console.log('Email:', email);
-console.log('New user ID from Supabase:', newUserData.user.id);
-console.log('ID being inserted into profiles:', newUserId);
-// CHECK IF PROFILE ALREADY EXISTS (this saves you every time)
-const { data: existingProfile } = await supabaseAdmin
-  .from('profiles')
-  .select('id')
-  .eq('id', newUserId)
-  .maybeSingle();
-
-if (existingProfile) {
-  console.warn('Profile already exists for user ID:', existingProfile);
-  // Profile already exists → user was half-created before → clean up and fail gracefully
-  // await supabaseAdmin.auth.admin.deleteUser(newUserId);
-  return NextResponse.json(
-    { error: 'User already exists or was partially created. Cleaned up.' },
-    { status: 409 }
-  );
-}
-
-// NOW safe to insert profile
-const { error: profileError } = await supabaseAdmin.from('profiles').insert({
-  id: newUserId,
-  email,
-  full_name: full_name || null,
-  role,
-  is_banned: false,
-  created_at: finalCreatedAt.toISOString(),
-  updated_at: finalCreatedAt.toISOString(),
-});
+    // 5. Create profile for the new user
+    const { error: profileError } = await supabaseAdmin.from('profiles').insert({
+      id: newUserId,
+      email,
+      full_name: full_name || null,
+      role,
+      is_banned: false,
+      created_at: finalCreatedAt.toISOString(),
+      updated_at: finalCreatedAt.toISOString(),
+    });
 
 if (profileError) {
   console.error('Profile creation failed:', profileError);
@@ -239,7 +224,7 @@ if (profileError) {
         full_name,
         role,
         created_at: finalCreatedAt,
-        temp_password: password, // send to admin only
+        temp_password: finalPassword, // send to admin only
       },
     });
   } catch (err: unknown) {
