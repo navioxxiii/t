@@ -2,7 +2,23 @@
  * Create Guest Support Ticket API
  * POST /api/support/guest/create
  * Public endpoint - no authentication required
+ *
+ * ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO
+ * This API has been disabled. Original implementation preserved below for reference.
  */
+
+import { NextResponse } from 'next/server';
+
+export async function POST() {
+  return NextResponse.json(
+    { error: 'Support ticketing system has been migrated to Tawk.to' },
+    { status: 503 }
+  );
+}
+
+/* ============================================================================
+ * ORIGINAL IMPLEMENTATION (COMMENTED OUT - MIGRATED TO TAWK.TO)
+ * ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -133,3 +149,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+============================================================================ */
