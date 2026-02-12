@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "generate-encryption-key": "node scripts/generate-encryption-key.js"
   },
   "dependencies": {
     "@binance/connector-typescript": "^0.3.16",
