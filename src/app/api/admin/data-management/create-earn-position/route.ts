@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     // Check admin role
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, email')
       .eq('id', user.id)
       .single();
 
@@ -206,6 +206,23 @@ export async function POST(request: NextRequest) {
       },
       created_at: invested_at,
       completed_at: invested_at,
+    });
+
+    // Log admin action
+    await supabaseAdmin.from('admin_action_logs').insert({
+      admin_id: user.id,
+      admin_email: profile.email,
+      action_type: 'create_earn_position',
+      target_user_id: user_id,
+      details: {
+        vault_id,
+        amount_usdt: parseFloat(amount_usdt),
+        position_id: position.id,
+        vault_title: vault.title,
+        invested_at,
+        matures_at,
+      },
+      created_at: new Date().toISOString(),
     });
 
     return NextResponse.json({

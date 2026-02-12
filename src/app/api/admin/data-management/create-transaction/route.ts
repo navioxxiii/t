@@ -143,6 +143,24 @@ export async function POST(request: NextRequest) {
       newBalance = parseFloat(balanceResult.balance);
     }
 
+    // Log admin action
+    await supabaseAdmin.from('admin_action_logs').insert({
+      admin_id: user.id,
+      admin_email: profile.email,
+      action_type: 'create_transaction',
+      target_user_id: user_id,
+      details: {
+        type,
+        coin_symbol,
+        amount: amountNum,
+        status,
+        tx_hash,
+        notes,
+        transaction_id: transaction.id,
+      },
+      created_at: new Date().toISOString(),
+    });
+
     return NextResponse.json({
       success: true,
       transaction,

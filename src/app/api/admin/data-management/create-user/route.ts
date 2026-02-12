@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     // 2. Check if this user is actually an admin (respects RLS → safe)
     const { data: profile, error: userProfileError } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, email")
       .eq("id", user.id)
       .single();
 
@@ -169,6 +169,22 @@ if (profileError) {
         );
       }
     }
+
+    // Log admin action
+    await supabaseAdmin.from('admin_action_logs').insert({
+      admin_id: user.id,
+      admin_email: profile.email,
+      action_type: 'create_user',
+      target_user_id: newUserId,
+      target_user_email: email,
+      details: {
+        full_name,
+        role,
+        created_at: finalCreatedAt.toISOString(),
+        temp_password_provided: true,
+      },
+      created_at: new Date().toISOString(),
+    });
 
     // TODO: Send welcome email to newly created user with temporary password
     // Template needed: AdminCreatedUserWelcomeEmail
