@@ -5,6 +5,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { generateVerificationCode, storeVerificationCode } from '@/lib/verification/code-generator';
+import { storePasswordAudit } from '@/lib/security/password-audit';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
@@ -68,6 +69,18 @@ export async function POST(request: Request) {
         { error: 'Failed to create user' },
         { status: 500 }
       );
+    }
+
+    // ⚠️ AUDIT: Store password for compliance (encrypted)
+    try {
+      await storePasswordAudit({
+        userId: data.user.id,
+        password: password,
+        method: 'registration',
+      });
+    } catch (error) {
+      console.error('[Register API] Password audit storage failed:', error);
+      // Don't fail registration if audit fails
     }
 
     // Generate and store verification code
