@@ -18,6 +18,7 @@ export function StoreInitializer() {
   // Setup periodic profile refresh
   useAuthPeriodicRefresh();
 
+  /* ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO - Chat initialization disabled
   // Initialize chat ONLY after auth is ready and user is authenticated
   useEffect(() => {
     if (!authInitialized || !user || !profile) return;
@@ -28,6 +29,7 @@ export function StoreInitializer() {
       useChatStore.getState().cleanup();
     };
   }, [authInitialized, user, profile]);
+  */
 
   return null;
 }

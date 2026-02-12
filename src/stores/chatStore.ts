@@ -1,7 +1,11 @@
 import { create } from 'zustand';
 import { createClient } from '@/lib/supabase/client';
-import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { RealtimeChannel } from '@supabase/supabase-js';
 import { useEffect } from 'react';
+
+/* ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO - Unused imports removed
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+*/
 
 // Types
 export interface Message {
@@ -71,6 +75,7 @@ interface ChatState {
   cleanup: () => void;
 }
 
+/* ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO - Sound notification helper disabled
 // Sound notification helper
 const playNotificationSound = () => {
   if (typeof window === 'undefined') return;
@@ -85,6 +90,7 @@ const playNotificationSound = () => {
     console.log('[ChatStore] Sound error:', err);
   }
 };
+*/
 
 export const useChatStore = create<ChatState>((set, get) => ({
   // Initial state
@@ -119,6 +125,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   resetUnreadCount: () => set({ unreadCount: 0 }),
 
   // Ticket actions
+  /* ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO - fetchActiveTicket method disabled
   fetchActiveTicket: async () => {
     set({ ticketLoading: true });
 
@@ -152,7 +159,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set({ ticketLoading: false });
     }
   },
+  */
+  fetchActiveTicket: async () => {
+    // Stub method - ticketing system migrated to Tawk.to
+    console.log('[ChatStore] Ticketing system migrated to Tawk.to');
+    set({ ticketLoading: false, activeTicket: null });
+  },
 
+  /* ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO - createTicket method disabled
   createTicket: async (subject = 'Chat conversation', message = 'User started a chat conversation') => {
     try {
       const response = await fetch('/api/support/tickets/auto-create', {
@@ -184,7 +198,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return null;
     }
   },
+  */
+  createTicket: async () => {
+    // Stub method - ticketing system migrated to Tawk.to
+    console.log('[ChatStore] Ticketing system migrated to Tawk.to');
+    return null;
+  },
 
+  /* ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO - resolveTicket method disabled
   resolveTicket: async (ticketId: string) => {
     try {
       const response = await fetch(`/api/support/tickets/${ticketId}`, {
@@ -204,8 +225,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return false;
     }
   },
+  */
+  resolveTicket: async (_ticketId: string) => {
+    // Stub method - ticketing system migrated to Tawk.to
+    console.log('[ChatStore] Ticketing system migrated to Tawk.to');
+    return false;
+  },
 
   // Message actions
+  /* ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO - fetchMessages method disabled
   fetchMessages: async (ticketId: string, limit: number) => {
     set({ messagesLoading: true });
 
@@ -251,7 +279,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set({ messagesLoading: false });
     }
   },
+  */
+  fetchMessages: async (_ticketId: string, _limit: number) => {
+    // Stub method - ticketing system migrated to Tawk.to
+    console.log('[ChatStore] Ticketing system migrated to Tawk.to');
+    set({ messages: [], messagesLoading: false, hasMore: false });
+  },
 
+  /* ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO - sendMessage method disabled
   sendMessage: async (ticketId: string, message: string) => {
     try {
       const response = await fetch(`/api/support/tickets/${ticketId}/messages`, {
@@ -268,7 +303,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return false;
     }
   },
+  */
+  sendMessage: async (_ticketId: string, _message: string) => {
+    // Stub method - ticketing system migrated to Tawk.to
+    console.log('[ChatStore] Ticketing system migrated to Tawk.to');
+    return false;
+  },
 
+  /* ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO - markMessagesAsRead method disabled
   markMessagesAsRead: async (ticketId: string) => {
     try {
       await fetch(`/api/support/tickets/${ticketId}/mark-read`, {
@@ -278,8 +320,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
       console.error('[ChatStore] Mark read error:', error);
     }
   },
+  */
+  markMessagesAsRead: async (_ticketId: string) => {
+    // Stub method - ticketing system migrated to Tawk.to
+    console.log('[ChatStore] Ticketing system migrated to Tawk.to');
+  },
 
   // Real-time subscription
+  /* ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO - subscribeToMessages method disabled
   subscribeToMessages: (ticketId: string) => {
     const { realtimeChannel, unsubscribeFromMessages, subscribedTicketId } = get();
 
@@ -393,6 +441,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
       });
 
     set({ realtimeChannel: channel, subscribedTicketId: ticketId });
+  },
+  */
+  subscribeToMessages: (_ticketId: string) => {
+    // Stub method - ticketing system migrated to Tawk.to
+    console.log('[ChatStore] Ticketing system migrated to Tawk.to');
   },
 
   unsubscribeFromMessages: () => {

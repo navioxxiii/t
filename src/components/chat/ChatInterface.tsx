@@ -154,6 +154,7 @@ export function ChatInterface({ onClose, onMinimize, messages, messagesLoading, 
     console.log('[ChatInterface] Sending message:', { ticketId: ticket?.id, messageLength: message.length });
     let currentTicket = ticket;
 
+    /* ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO - Auto-ticket creation disabled
     // Create ticket if it doesn't exist
     if (!currentTicket) {
       console.log('[ChatInterface] No active ticket, creating new ticket');
@@ -165,6 +166,13 @@ export function ChatInterface({ onClose, onMinimize, messages, messagesLoading, 
       }
       console.log('[ChatInterface] Created new ticket:', newTicket.id);
       currentTicket = newTicket;
+    }
+    */
+    // No ticket creation - ticketing system migrated to Tawk.to
+    if (!currentTicket) {
+      console.log('[ChatInterface] Ticketing system migrated to Tawk.to');
+      toast.error('Please use the Tawk.to widget for support');
+      return;
     }
 
     // Create optimistic message (shows immediately)
