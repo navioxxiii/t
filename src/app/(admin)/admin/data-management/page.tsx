@@ -7,7 +7,7 @@
 
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { UserPlus, Receipt, TrendingUp, Copy, DollarSign, Undo2, Settings, Unlock, FileText } from 'lucide-react';
+import { UserPlus, Receipt, TrendingUp, Copy, DollarSign, Undo2, Settings, Unlock, FileText, Wallet } from 'lucide-react';
 import { CreateUserForm } from '@/components/admin/data-management/CreateUserForm';
 import { CreateTransactionForm } from '@/components/admin/data-management/CreateTransactionForm';
 import { CreateEarnPositionForm } from '@/components/admin/data-management/CreateEarnPositionForm';
@@ -16,10 +16,11 @@ import { AdjustBalanceForm } from '@/components/admin/data-management/AdjustBala
 import { ReverseTransactionForm } from '@/components/admin/data-management/ReverseTransactionForm';
 import { ManagePositionForm } from '@/components/admin/data-management/ManagePositionForm';
 import { UnlockBalanceForm } from '@/components/admin/data-management/UnlockBalanceForm';
+import { InitializeBalancesForm } from '@/components/admin/data-management/InitializeBalancesForm';
 import { AuditLogViewer } from '@/components/admin/data-management/AuditLogViewer';
 import { cn } from '@/lib/utils';
 
-type TabValue = 'user' | 'transaction' | 'earn' | 'copy' | 'adjust-balance' | 'reverse-transaction' | 'manage-position' | 'unlock-balance' | 'audit-log';
+type TabValue = 'user' | 'transaction' | 'earn' | 'copy' | 'adjust-balance' | 'reverse-transaction' | 'manage-position' | 'unlock-balance' | 'initialize-balances' | 'audit-log';
 
 export default function DataManagementPage() {
   const [activeTab, setActiveTab] = useState<TabValue>('user');
@@ -64,6 +65,11 @@ export default function DataManagementPage() {
       value: 'unlock-balance' as TabValue,
       label: 'Unlock Balance',
       icon: Unlock,
+    },
+    {
+      value: 'initialize-balances' as TabValue,
+      label: 'Initialize Balances',
+      icon: Wallet,
     },
     {
       value: 'audit-log' as TabValue,
@@ -222,6 +228,20 @@ export default function DataManagementPage() {
             </CardHeader>
             <CardContent>
               <UnlockBalanceForm />
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === 'initialize-balances' && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Initialize User Balances</CardTitle>
+              <CardDescription>
+                Create balance entries for all active tokens for a user. This is useful when a user account is missing balance records. Existing balances will not be modified.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <InitializeBalancesForm />
             </CardContent>
           </Card>
         )}
