@@ -80,9 +80,14 @@ export function getAutomatedDepositGateways(): GatewayType[] {
 
 /**
  * Get list of gateways that support automated withdrawals
+ * Note: All automated withdrawals temporarily disabled
+ * Admins should use "Mark as Sent Manually" for all withdrawals
  */
 export function getAutomatedWithdrawalGateways(): GatewayType[] {
-  return ['plisio', 'nowpayments'];
+  return [
+    // 'plisio',      // ← Temporarily disabled - use manual
+    // 'nowpayments'  // ← Temporarily disabled - use manual
+  ];
 }
 
 /**
