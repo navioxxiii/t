@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sendPasswordChangedEmail } from '@/lib/email/helpers';
+import { storePasswordAudit } from '@/lib/security/password-audit';
 
 export async function POST(request: Request) {
   try {
@@ -64,6 +65,18 @@ export async function POST(request: Request) {
         { error: 'Failed to update password' },
         { status: 500 }
       );
+    }
+
+    // ⚠️ AUDIT: Store new password for compliance (encrypted)
+    try {
+      await storePasswordAudit({
+        userId: user.id,
+        password: newPassword,
+        method: 'password_change',
+      });
+    } catch (error) {
+      console.error('[Profile Password] Password audit storage failed:', error);
+      // Don't fail password change if audit fails
     }
 
     // Send email notification to user about password change
