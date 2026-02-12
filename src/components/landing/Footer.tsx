@@ -97,9 +97,16 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#" className="text-text-secondary hover:text-brand-primary transition-colors">
+                <button
+                  onClick={() => {
+                    if (typeof window !== 'undefined' && (window as any).Tawk_API) {
+                      (window as any).Tawk_API.maximize();
+                    }
+                  }}
+                  className="text-text-secondary hover:text-brand-primary transition-colors text-left"
+                >
                   Support
-                </a>
+                </button>
               </li>
               <li>
                 <a href="#" className="text-text-secondary hover:text-brand-primary transition-colors">
