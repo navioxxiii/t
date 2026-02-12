@@ -6,10 +6,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
+    const supabaseAdmin = createAdminClient();
 
     // Check authentication
     const {
@@ -51,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get trader details
-    const { data: trader, error: traderError } = await supabase
+    const { data: trader, error: traderError } = await supabaseAdmin
       .from('traders')
       .select('*')
       .eq('id', trader_id)
@@ -70,7 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's USDT balance
-    const { data: userBalance, error: balanceQueryError } = await supabase
+    const { data: userBalance, error: balanceQueryError } = await supabaseAdmin
       .from('user_balances')
       .select('id, balance, base_token_id, base_tokens!inner(id, symbol)')
       .eq('user_id', user_id)
@@ -95,7 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for existing active position
-    const { data: existingPosition } = await supabase
+    const { data: existingPosition } = await supabaseAdmin
       .from('user_copy_positions')
       .select('id')
       .eq('user_id', user_id)
@@ -111,7 +113,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Debit balance using database function (atomic operation with validation)
-    const { data: balanceResult, error: balanceError } = await supabase.rpc(
+    const { data: balanceResult, error: balanceError } = await supabaseAdmin.rpc(
       'update_user_balance',
       {
         p_user_id: user_id,
@@ -130,7 +132,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create copy position
-    const { data: position, error: positionError } = await supabase
+    const { data: position, error: positionError } = await supabaseAdmin
       .from('user_copy_positions')
       .insert({
         user_id,
@@ -148,7 +150,7 @@ export async function POST(request: NextRequest) {
 
     if (positionError) {
       // Rollback: credit balance back
-      await supabase.rpc('update_user_balance', {
+      await supabaseAdmin.rpc('update_user_balance', {
         p_user_id: user_id,
         p_base_token_id: baseToken.id,
         p_amount: parseFloat(allocation_usdt),
@@ -169,7 +171,7 @@ export async function POST(request: NextRequest) {
       const newCopiers = trader.current_copiers + 1;
       const newAum = parseFloat(trader.aum_usdt) + parseFloat(allocation_usdt);
 
-      const { error: traderUpdateError } = await supabase
+      const { error: traderUpdateError } = await supabaseAdmin
         .from('traders')
         .update({
           current_copiers: newCopiers,
@@ -184,7 +186,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create related transaction
-    await supabase.from('transactions').insert({
+    await supabaseAdmin.from('transactions').insert({
       user_id,
       type: 'copy_trade_start',
       amount: parseFloat(allocation_usdt),

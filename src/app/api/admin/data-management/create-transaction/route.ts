@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's balance for this token
-    const { data: userBalance, error: balanceError } = await supabase
+    const { data: userBalance, error: balanceError } = await supabaseAdmin
       .from('user_balances')
       .select('id, balance, base_token_id, base_tokens!inner(id, symbol)')
       .eq('user_id', user_id)
