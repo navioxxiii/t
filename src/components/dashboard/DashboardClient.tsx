@@ -11,6 +11,7 @@ import { CoinSelectorDrawer } from '@/components/dashboard/CoinSelectorDrawer';
 import { SendDrawer } from '@/components/send/SendDrawer';
 import { ReceiveDrawer } from '@/components/receive/ReceiveDrawer';
 import { PinSetupDialog } from '@/components/security/PinSetupDialog';
+import { EmptyWalletBanner } from '@/components/dashboard/EmptyWalletBanner';
 import { useBalances } from '@/hooks/useBalances';
 import { useCoinPrices } from '@/hooks/useCoinPrices';
 import { calculatePortfolioValue, calculatePortfolioChange } from '@/lib/binance/client';
@@ -117,6 +118,7 @@ export default function DashboardClient() {
   const selectedReceiveBalance = balances?.find(b => b.token.id === selectedReceiveTokenId);
 
   const isLoading = balancesLoading || pricesLoading;
+  const hasBalances = balances && balances.length > 0;
 
   return (
     <>
@@ -135,14 +137,18 @@ export default function DashboardClient() {
         onSwap={handleSwapClick}
       />
 
-      {/* Coin List */}
+      {/* Empty Wallet Banner or Coin List */}
       <div className="mt-6">
-        <CoinList
-          onCoinClick={handleCoinClick}
-          pricesMap={pricesMap}
-          pricesLoading={pricesLoading}
-          pricesError={pricesError}
-        />
+        {!isLoading && !hasBalances ? (
+          <EmptyWalletBanner />
+        ) : (
+          <CoinList
+            onCoinClick={handleCoinClick}
+            pricesMap={pricesMap}
+            pricesLoading={pricesLoading}
+            pricesError={pricesError}
+          />
+        )}
       </div>
 
       {/* Coin Detail Drawer */}
