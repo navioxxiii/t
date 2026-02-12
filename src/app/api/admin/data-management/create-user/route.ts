@@ -61,10 +61,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
     }
 
+    // Check if trying to create super_admin (only super_admins can do this)
+    if (role === "super_admin" && profile.role !== "super_admin") {
+      return NextResponse.json(
+        { error: "Only super admins can create super admin accounts" },
+        { status: 403 }
+      );
+    }
+
     const password = "Temp@2025!"; // Temporary password for new user
     const finalCreatedAt = created_at ? new Date(created_at) : new Date();
 
-    // 4. NOW use admin client to create user (only admins reach here)
+    // 4. Check if email already exists BEFORE creating auth user
+    const { data: existingAuthUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const emailExists = existingAuthUsers?.users.some(u => u.email === email);
+
+    if (emailExists) {
+      return NextResponse.json(
+        { error: "User with this email already exists" },
+        { status: 409 }
+      );
+    }
+
+    // 5. NOW use admin client to create user (only admins reach here)
     // Inside your POST handler, right after creating the auth user
 const { data: newUserData, error: createError } = await supabaseAdmin.auth.admin.createUser({
   email,

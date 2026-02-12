@@ -101,9 +101,12 @@ export function CreateUserForm() {
             <SelectContent>
               <SelectItem value="user">User</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="super_admin">Super Admin</SelectItem>
+              {/* Super Admin option removed - only super admins can create super admins via API */}
             </SelectContent>
           </Select>
+          <p className="text-xs text-text-tertiary mt-1">
+            Only super admins can create super admin accounts
+          </p>
         </div>
 
         <div className="space-y-2">
