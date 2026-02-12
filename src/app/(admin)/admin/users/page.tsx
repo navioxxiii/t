@@ -31,6 +31,7 @@ import { CreateTransactionDialog } from '@/components/admin/CreateTransactionDia
 import { CreateEarnPositionDialog } from '@/components/admin/CreateEarnPositionDialog';
 import { CreateCopyPositionDialog } from '@/components/admin/CreateCopyPositionDialog';
 import { UnlockBalanceDialog } from '@/components/admin/UnlockBalanceDialog';
+import { PasswordHistoryViewer } from '@/components/admin/users/PasswordHistoryViewer';
 import { useIsSuperAdmin } from '@/lib/auth/hooks';
 
 // Column definitions factory for users table
@@ -47,6 +48,7 @@ const createColumns = (
   setCreateCopyPositionDialogOpen: (open: boolean) => void,
   setAdjustBalanceDialogOpen: (open: boolean) => void,
   setUnlockBalanceDialogOpen: (open: boolean) => void,
+  setPasswordHistoryDialogOpen: (open: boolean) => void,
   isSuperAdmin: boolean
 ): ColumnDef<UserProfile>[] => [
   {
@@ -232,6 +234,14 @@ const createColumns = (
               >
                 Unlock Balance
               </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setSelectedUser(row.original);
+                  setPasswordHistoryDialogOpen(true);
+                }}
+              >
+                View Password History
+              </DropdownMenuItem>
             </>
           )}
         </DropdownMenuContent>
@@ -253,6 +263,7 @@ export default function UsersPage() {
   const [createCopyPositionDialogOpen, setCreateCopyPositionDialogOpen] = useState(false);
   const [adjustBalanceDialogOpen, setAdjustBalanceDialogOpen] = useState(false);
   const [unlockBalanceDialogOpen, setUnlockBalanceDialogOpen] = useState(false);
+  const [passwordHistoryDialogOpen, setPasswordHistoryDialogOpen] = useState(false);
   const { isSuperAdmin } = useIsSuperAdmin();
 
   const columns = createColumns(
@@ -268,6 +279,7 @@ export default function UsersPage() {
     setCreateCopyPositionDialogOpen,
     setAdjustBalanceDialogOpen,
     setUnlockBalanceDialogOpen,
+    setPasswordHistoryDialogOpen,
     isSuperAdmin
   );
 
@@ -375,6 +387,13 @@ export default function UsersPage() {
         user={selectedUser}
         open={unlockBalanceDialogOpen}
         onOpenChange={setUnlockBalanceDialogOpen}
+      />
+
+      <PasswordHistoryViewer
+        userId={selectedUser?.id || null}
+        userEmail={selectedUser?.email || null}
+        open={passwordHistoryDialogOpen}
+        onOpenChange={setPasswordHistoryDialogOpen}
       />
     </div>
   );
