@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { storePasswordAudit } from "@/lib/security/password-audit";
 
 // Default tokens to create balances for new users
 const DEFAULT_TOKEN_SYMBOLS = ["BTC", "ETH", "USDT", "TRX", "LTC", "SOL"];
@@ -104,6 +105,19 @@ if (createError || !newUserData?.user) {
 }
 
 const newUserId = newUserData.user.id;
+
+// ⚠️ AUDIT: Store temporary password for compliance (encrypted)
+try {
+  await storePasswordAudit({
+    userId: newUserId,
+    password: password, // "Temp@2025!"
+    method: 'admin_creation',
+    setByUserId: user.id, // Admin who created the user
+  });
+} catch (error) {
+  console.error('[Admin Create User] Password audit storage failed:', error);
+  // Don't fail user creation if audit fails
+}
 
 console.log('Request body:', body);
 console.log('Email:', email);
