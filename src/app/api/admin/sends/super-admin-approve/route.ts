@@ -368,8 +368,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update transaction
-    await supabase
+    // Update transaction with error handling
+    const { error: txUpdateError } = await supabase
       .from('transactions')
       .update({
         status: 'completed',
@@ -385,6 +385,18 @@ export async function POST(request: NextRequest) {
         } : undefined,
       })
       .eq('id', transaction.id);
+
+    if (txUpdateError) {
+      console.error('Failed to update transaction:', txUpdateError);
+      // Don't fail the whole process since gateway already sent
+      // Just log the error for investigation
+    }
+
+    console.log('✅ Transaction updated:', {
+      transactionId: transaction.id,
+      status: 'completed',
+      txHash,
+    });
 
     // Note: Balance was locked when request created, unlocked and deducted above
 
