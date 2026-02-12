@@ -1287,6 +1287,15 @@ export async function sendAdminNotificationEmail(
 /**
  * Send email when a support ticket is created
  */
+/* ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO - Email function disabled */
+export async function sendSupportTicketCreatedEmail(
+  _params: SendSupportTicketCreatedEmailParams
+): Promise<{ success: boolean; error?: string }> {
+  console.log('[Email] Ticketing system migrated to Tawk.to - email not sent');
+  return { success: true };
+}
+
+/* ORIGINAL IMPLEMENTATION (COMMENTED OUT)
 export async function sendSupportTicketCreatedEmail(
   params: SendSupportTicketCreatedEmailParams
 ): Promise<{ success: boolean; error?: string }> {
@@ -1326,85 +1335,27 @@ export async function sendSupportTicketCreatedEmail(
     };
   }
 }
+*/
 
 /**
  * Send email when an admin replies to a support ticket
+ * ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO - Email function disabled
  */
 export async function sendSupportTicketReplyEmail(
-  params: SendSupportTicketReplyEmailParams
+  _params: SendSupportTicketReplyEmailParams
 ): Promise<{ success: boolean; error?: string }> {
-  try {
-    const provider = getEmailProvider();
-
-    const html = await render(
-      SupportTicketReplyEmail({
-        recipientName: params.recipientName,
-        replyContent: params.replyContent,
-        ticketUrl: params.ticketUrl,
-        ticketNumber: params.ticketNumber,
-      })
-    );
-
-    const result = await provider.sendEmail({
-      to: params.email,
-      subject: `New Reply to Support Ticket #${params.ticketNumber}`,
-      html,
-      text: `A new reply has been added to your support ticket #${params.ticketNumber}. View it here: ${params.ticketUrl}`,
-    });
-
-    if (result.success) {
-      console.log(`✅ Email notification sent for ticket #${params.ticketNumber} to ${params.email}`);
-    } else {
-      console.error(`❌ Failed to send reply email for ticket #${params.ticketNumber}: ${result.error}`);
-    }
-
-    return result;
-  } catch (error) {
-    console.error('[Email] Error sending support ticket reply email:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
+  console.log('[Email] Ticketing system migrated to Tawk.to - email not sent');
+  return { success: true };
 }
 
 /**
  * Send email to remind user about inactive support ticket
+ * ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO - Email function disabled
  */
 export async function sendSupportTicketInactivityReminderEmail(
-  params: SendSupportTicketInactivityReminderEmailParams
+  _params: SendSupportTicketInactivityReminderEmailParams
 ): Promise<{ success: boolean; error?: string }> {
-  try {
-    const provider = getEmailProvider();
-
-    const html = await render(
-      SupportTicketInactivityReminderEmail({
-        recipientName: params.recipientName,
-        ticketUrl: params.ticketUrl,
-        ticketNumber: params.ticketNumber,
-      })
-    );
-
-    const result = await provider.sendEmail({
-      to: params.email,
-      subject: `Action Required for Support Ticket #${params.ticketNumber}`,
-      html,
-      text: `We are waiting for your response on support ticket #${params.ticketNumber}. Please provide an update so we can continue to assist you. If we don't hear back from you, this ticket will be automatically closed soon. View it here: ${params.ticketUrl}`,
-    });
-
-    if (result.success) {
-      console.log(`✅ Inactivity reminder sent for ticket #${params.ticketNumber} to ${params.email}`);
-    } else {
-      console.error(`❌ Failed to send inactivity reminder for ticket #${params.ticketNumber}: ${result.error}`);
-    }
-
-    return result;
-  } catch (error) {
-    console.error('[Email] Error sending support ticket inactivity reminder email:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
+  console.log('[Email] Ticketing system migrated to Tawk.to - email not sent');
+  return { success: true };
 }
 

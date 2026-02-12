@@ -5,7 +5,28 @@
  * This endpoint is called by a cron job to perform automated ticket management.
  * - Sends inactivity reminders for tickets waiting on user response.
  * - Auto-closes resolved or inactive tickets.
+ *
+ * ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO
+ * This API has been disabled. Original implementation preserved below for reference.
  */
+
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function POST(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return new NextResponse('Unauthorized', { status: 401 });
+  }
+
+  return NextResponse.json(
+    { success: true, message: 'Support ticketing system has been migrated to Tawk.to' },
+    { status: 200 }
+  );
+}
+
+/* ============================================================================
+ * ORIGINAL IMPLEMENTATION (COMMENTED OUT - MIGRATED TO TAWK.TO)
+ * ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -92,3 +113,5 @@ export async function POST(request: NextRequest) {
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
+
+============================================================================ */
