@@ -6,11 +6,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { checkRateLimit, logRateLimitEvent, RATE_LIMITS } from '@/lib/security/rate-limiter';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = await createClient(); // For auth and profile checks
+    const adminClient = createAdminClient(); // For transaction updates (bypasses RLS)
 
     // Get current user
     const {
@@ -139,8 +141,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update transaction
-    await supabase
+    // Update transaction with admin client (bypasses RLS)
+    const { error: txUpdateError } = await adminClient
       .from('transactions')
       .update({
         status: 'completed',
@@ -152,10 +154,50 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', transaction.id);
 
+    if (txUpdateError) {
+      console.error('Failed to update transaction:', txUpdateError);
+
+      // Rollback withdrawal request
+      await adminClient
+        .from('withdrawal_requests')
+        .update({ status: originalStatus })
+        .eq('id', requestId);
+
+      return NextResponse.json(
+        {
+          error: 'Failed to update transaction status',
+          details: txUpdateError.message
+        },
+        { status: 500 }
+      );
+    }
+
+    // Verify transaction was actually updated (use admin client)
+    const { data: verifyTx } = await adminClient
+      .from('transactions')
+      .select('id, status, completed_at')
+      .eq('id', transaction.id)
+      .single();
+
+    console.log('✅ Transaction updated to completed:', {
+      transactionId: transaction.id,
+      txHash,
+      completedAt: sentAt,
+      verifiedStatus: verifyTx?.status,
+      updated: verifyTx?.status === 'completed',
+    });
+
+    if (verifyTx?.status !== 'completed') {
+      console.error('⚠️ Transaction update succeeded but status is not completed!', {
+        currentStatus: verifyTx?.status,
+        transactionId: transaction.id,
+      });
+    }
+
     // If it's an internal transfer, process balance transfers and create recipient transaction
     if (withdrawalRequest.is_internal_transfer && withdrawalRequest.recipient_user_id) {
       // Unlock sender's balance and deduct (balance was locked when request was created)
-      const { error: unlockError } = await supabase.rpc('unlock_user_balance', {
+      const { error: unlockError } = await adminClient.rpc('unlock_user_balance', {
         p_user_id: withdrawalRequest.user_id,
         p_base_token_id: transaction.base_token_id,
         p_amount: parseFloat(withdrawalRequest.amount),
@@ -171,7 +213,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Credit recipient's balance
-      const { error: creditError } = await supabase.rpc('update_user_balance', {
+      const { error: creditError } = await adminClient.rpc('update_user_balance', {
         p_user_id: withdrawalRequest.recipient_user_id,
         p_base_token_id: transaction.base_token_id,
         p_amount: parseFloat(withdrawalRequest.amount),
@@ -183,7 +225,7 @@ export async function POST(request: NextRequest) {
 
         // ROLLBACK: Refund sender by re-crediting their balance
         // (balance was already unlocked and deducted above)
-        await supabase.rpc('update_user_balance', {
+        await adminClient.rpc('update_user_balance', {
           p_user_id: withdrawalRequest.user_id,
           p_base_token_id: transaction.base_token_id,
           p_amount: parseFloat(withdrawalRequest.amount),
@@ -191,7 +233,7 @@ export async function POST(request: NextRequest) {
         });
 
         // Revert withdrawal_request status back to original
-        await supabase
+        await adminClient
           .from('withdrawal_requests')
           .update({ status: originalStatus })
           .eq('id', requestId);
@@ -203,7 +245,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Create deposit transaction for recipient (using new unified balance schema)
-      await supabase
+      await adminClient
         .from('transactions')
         .insert({
           user_id: withdrawalRequest.recipient_user_id,
@@ -226,7 +268,7 @@ export async function POST(request: NextRequest) {
     } else {
       // External withdrawal - unlock and deduct sender's balance
       // (balance was locked when request was created)
-      const { error: unlockError } = await supabase.rpc('unlock_user_balance', {
+      const { error: unlockError } = await adminClient.rpc('unlock_user_balance', {
         p_user_id: withdrawalRequest.user_id,
         p_base_token_id: transaction.base_token_id,
         p_amount: parseFloat(withdrawalRequest.amount),
@@ -237,7 +279,7 @@ export async function POST(request: NextRequest) {
         console.error('Failed to unlock sender balance:', unlockError);
 
         // Revert withdrawal_request status since balance operation failed
-        await supabase
+        await adminClient
           .from('withdrawal_requests')
           .update({ status: originalStatus })
           .eq('id', requestId);
