@@ -10,20 +10,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Loader2, Eye, EyeOff, CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
 
 export function CreateUserForm() {
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
     full_name: '',
     role: 'user',
     created_at: new Date(),
+    password: 'Temp@2025!',
+    email_verified: true,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,7 +43,14 @@ export function CreateUserForm() {
       const response = await fetch('/api/admin/data-management/create-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          email: formData.email,
+          full_name: formData.full_name || null,
+          role: formData.role,
+          created_at: formData.created_at,
+          password: formData.password,
+          email_verified: formData.email_verified,
+        }),
       });
 
       const data = await response.json();
@@ -49,7 +59,7 @@ export function CreateUserForm() {
         throw new Error(data.error || 'Failed to create user');
       }
 
-      toast.success(`User ${formData.email} created successfully`);
+      toast.success(`User created successfully! Temporary password: ${formData.password}`);
 
       // Reset form
       setFormData({
@@ -57,7 +67,10 @@ export function CreateUserForm() {
         full_name: '',
         role: 'user',
         created_at: new Date(),
+        password: 'Temp@2025!',
+        email_verified: true,
       });
+      setShowPassword(true);
     } catch (error) {
       console.error('Error creating user:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create user');
@@ -90,6 +103,40 @@ export function CreateUserForm() {
             value={formData.full_name}
             onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="password">
+            Temporary Password
+            <span className="text-text-tertiary text-xs ml-2">(User will receive this password)</span>
+          </Label>
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              required
+              placeholder="Enter temporary password"
+              className="pr-10"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4 text-text-tertiary" />
+              ) : (
+                <Eye className="h-4 w-4 text-text-tertiary" />
+              )}
+            </Button>
+          </div>
+          <p className="text-xs text-text-tertiary mt-1">
+            Default: Temp@2025! (You can change this)
+          </p>
         </div>
 
         <div className="space-y-2">
@@ -131,6 +178,22 @@ export function CreateUserForm() {
             </PopoverContent>
           </Popover>
         </div>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="email_verified"
+          checked={formData.email_verified}
+          onCheckedChange={(checked) =>
+            setFormData({ ...formData, email_verified: checked === true })
+          }
+        />
+        <Label htmlFor="email_verified" className="text-sm font-normal cursor-pointer">
+          Mark email as verified
+          <span className="text-text-tertiary text-xs ml-2">
+            (Recommended: checked by default)
+          </span>
+        </Label>
       </div>
 
       <div className="flex items-center justify-between pt-4 border-t">
