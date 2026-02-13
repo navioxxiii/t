@@ -18,6 +18,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getGatewayByConfig } from '@/lib/gateways';
 import type { GatewayType, GatewayConfig } from '@/lib/gateways';
+import { ensureUserBalances } from '@/lib/users/balances';
 
 export async function POST(request: NextRequest) {
   try {
@@ -189,32 +190,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize zero balances for all base tokens
-    const { data: baseTokens } = await adminClient
-      .from('base_tokens')
-      .select('id')
-      .eq('is_active', true);
-
-    if (baseTokens && baseTokens.length > 0) {
-      const balanceInserts = baseTokens.map((token) => ({
-        user_id: user.id,
-        base_token_id: token.id,
-        balance: 0,
-        locked_balance: 0,
-      }));
-
-      const { error: balanceError } = await adminClient
-        .from('user_balances')
-        .upsert(balanceInserts, {
-          onConflict: 'user_id,base_token_id',
-          ignoreDuplicates: true
-        });
-
-      if (balanceError) {
-        console.error('Failed to initialize balances:', balanceError);
-        // Non-fatal - balances will be created on first transaction
-      } else {
-        console.log(`✓ Initialized/verified ${baseTokens.length} zero balances`);
-      }
+    const balanceResult = await ensureUserBalances(user.id, { client: adminClient });
+    if (!balanceResult.success) {
+      console.error('Failed to initialize balances:', balanceResult.error);
+      // Non-fatal - balances will be created on first transaction
+    } else {
+      console.log(
+        `✓ Initialized/verified ${balanceResult.total} zero balances (${balanceResult.created} new, ${balanceResult.skipped} existing)`
+      );
     }
 
     // Ensure user has token preferences (should be created by handle_new_user, but double-check)
