@@ -9,9 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyCode } from '@/lib/verification/code-generator';
 import { NextResponse } from 'next/server';
 import { sendWelcomeEmail } from '@/lib/email/helpers';
-
-// Default tokens to create balances for new users
-const DEFAULT_TOKEN_SYMBOLS = ["BTC", "ETH", "USDT", "TRX", "LTC", "SOL"];
+import { ensureUserBalances } from '@/lib/users/balances';
 
 export async function POST(request: Request) {
   try {
@@ -102,33 +100,14 @@ export async function POST(request: Request) {
     }
 
     // CREATE DEFAULT USER BALANCES after email verification
-    console.log('[Verify Code] Creating default user balances for user:', userId);
-
-    // Get base token IDs for default tokens
-    const { data: baseTokens, error: tokensError } = await adminClient
-      .from('base_tokens')
-      .select('id, symbol')
-      .in('symbol', DEFAULT_TOKEN_SYMBOLS)
-      .eq('is_active', true);
-
-    if (tokensError) {
-      console.error('[Verify Code] Error fetching base tokens:', tokensError);
-    } else if (baseTokens && baseTokens.length > 0) {
-      const balanceInserts = baseTokens.map((token) => ({
-        user_id: userId,
-        base_token_id: token.id,
-        balance: 0,
-        locked_balance: 0,
-      }));
-
-      const { error: balancesError } = await adminClient
-        .from('user_balances')
-        .insert(balanceInserts);
-
-      if (balancesError) {
-        console.error('[Verify Code] User balance creation failed:', balancesError);
-        // Don't block verification - balances can be created later
-      }
+    const balanceResult = await ensureUserBalances(userId, { client: adminClient });
+    if (!balanceResult.success) {
+      console.error('[Verify Code] User balance creation failed:', balanceResult.error);
+      // Don't block verification - balances can be created later
+    } else {
+      console.log(
+        `[Verify Code] User balances initialized: ${balanceResult.created} created, ${balanceResult.skipped} existed`
+      );
     }
 
     // Send welcome email after successful verification
