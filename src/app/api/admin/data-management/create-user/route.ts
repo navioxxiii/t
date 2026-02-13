@@ -8,9 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { storePasswordAudit } from "@/lib/security/password-audit";
-
-// Default tokens to create balances for new users
-const DEFAULT_TOKEN_SYMBOLS = ["BTC", "ETH", "USDT", "TRX", "LTC", "SOL"];
+import { ensureUserBalances } from "@/lib/users/balances";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient(); // ← regular client (session + RLS)
@@ -125,78 +123,113 @@ export async function POST(request: NextRequest) {
       // Don't fail user creation if audit fails
     }
 
-    // 5. Create profile for the new user
-    const { error: profileError } = await supabaseAdmin.from('profiles').insert({
-      id: newUserId,
-      email,
-      full_name: full_name || null,
-      role,
-      is_banned: false,
-      created_at: finalCreatedAt.toISOString(),
-      updated_at: finalCreatedAt.toISOString(),
-    });
+    // 5. Wait for trigger to create profile, then update with admin values
+    // The on_auth_user_created trigger automatically creates:
+    // - profiles (with default role='user')
+    // - user_token_preferences
+    // - user_balances
+    // We just need to update the profile with our custom values
 
-    if (profileError) {
-      console.error('Profile creation failed:', profileError);
+    // Brief delay to ensure trigger completes (usually instant, but being safe)
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-      // ALWAYS rollback the auth user if profile fails
+    // Verify profile was created by trigger
+    const { data: triggerProfile, error: fetchError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, role')
+      .eq('id', newUserId)
+      .single();
+
+    if (fetchError || !triggerProfile) {
+      console.error('Profile was not created by trigger:', fetchError);
+
+      // Rollback auth user
       await supabaseAdmin.auth.admin.deleteUser(newUserId).catch(console.error);
 
-      // Check if it's a duplicate key error (orphaned profile from previous attempt)
-      if (profileError.message?.includes('duplicate key') ||
-          profileError.message?.includes('profiles_pkey') ||
-          profileError.code === '23505') {
-        return NextResponse.json(
-          { error: 'User profile already exists. Please contact support to resolve this data inconsistency.' },
-          { status: 409 }
-        );
-      }
-
       return NextResponse.json(
-        { error: 'Failed to create profile', details: profileError.message },
+        {
+          error: 'Database trigger failed to create profile. Check trigger configuration.',
+          details: fetchError?.message
+        },
         { status: 500 }
       );
     }
 
-    // Create user balances for default tokens
-    const { data: baseTokens, error: tokensError } = await supabaseAdmin
-      .from('base_tokens')
-      .select('id, symbol')
-      // .in('symbol', DEFAULT_TOKEN_SYMBOLS)
-      .eq('is_active', true);
+    // Update profile with admin-specified values (role, created_at, full_name)
+    const { error: profileUpdateError } = await supabaseAdmin
+      .from('profiles')
+      .update({
+        email, // Ensure email is set
+        full_name: full_name || null,
+        role, // Override default 'user' role
+        is_banned: false,
+        created_at: finalCreatedAt.toISOString(), // Custom registration date
+        updated_at: finalCreatedAt.toISOString(),
+      })
+      .eq('id', newUserId);
 
-    if (tokensError) {
-      console.error('Error fetching base tokens:', tokensError);
-      // Continue anyway - balances can be created later
-    } else if (baseTokens && baseTokens.length > 0) {
-      const balanceInserts = baseTokens.map((token) => ({
-        user_id: newUserId,
-        base_token_id: token.id,
-        balance: 0,
-        locked_balance: 0,
-      }));
+    if (profileUpdateError) {
+      console.error('Failed to update profile with admin values:', profileUpdateError);
 
-      const { error: balancesError } = await supabaseAdmin
-        .from('user_balances')
-        .insert(balanceInserts);
+      // Rollback: delete profile and auth user
+      await supabaseAdmin.from('profiles').delete().eq('id', newUserId);
+      await supabaseAdmin.auth.admin.deleteUser(newUserId).catch(console.error);
 
-      if (balancesError) {
-        console.error('User balance creation failed:', balancesError);
-
-        // ALWAYS rollback the auth user and profile if balances fail
-        try {
-          await supabaseAdmin.from('profiles').delete().eq('id', newUserId);
-          await supabaseAdmin.auth.admin.deleteUser(newUserId);
-        } catch (rollbackError) {
-          console.error('Rollback error:', rollbackError);
-        }
-
-        return NextResponse.json(
-          { error: 'Failed to create user balances', details: balancesError.message },
-          { status: 500 }
-        );
-      }
+      return NextResponse.json(
+        { error: 'Failed to update profile', details: profileUpdateError.message },
+        { status: 500 }
+      );
     }
+
+    console.log('✅ Profile created by trigger and updated with admin values:', {
+      userId: newUserId,
+      role,
+      created_at: finalCreatedAt.toISOString(),
+    });
+
+    // Ensure user_balances were created by trigger (with fallback)
+    const balanceResult = await ensureUserBalances(newUserId, { client: supabaseAdmin });
+
+    if (!balanceResult.success) {
+      console.error('Failed to ensure user balances:', balanceResult.error);
+
+      // Rollback
+      await supabaseAdmin.from('profiles').delete().eq('id', newUserId);
+      await supabaseAdmin.auth.admin.deleteUser(newUserId).catch(console.error);
+
+      return NextResponse.json(
+        { error: 'Failed to initialize user balances', details: balanceResult.error },
+        { status: 500 }
+      );
+    }
+
+    if (balanceResult.total === 0) {
+      // No active tokens found - this is unusual but not fatal
+      console.warn('No active base tokens found for user initialization');
+    }
+
+    console.log('✅ User balances verified:', {
+      userId: newUserId,
+      created: balanceResult.created,
+      skipped: balanceResult.skipped,
+      total: balanceResult.total,
+    });
+
+    // Verify user_token_preferences were created by trigger
+    const { data: tokenPrefs, error: prefsCheckError } = await supabaseAdmin
+      .from('user_token_preferences')
+      .select('base_token_id, is_visible')
+      .eq('user_id', newUserId);
+
+    if (prefsCheckError) {
+      console.warn('Failed to verify user_token_preferences:', prefsCheckError);
+      // Don't fail - preferences are not critical
+    }
+
+    console.log('✅ User token preferences verified (created by trigger):', {
+      userId: newUserId,
+      prefsCount: tokenPrefs?.length || 0,
+    });
 
     // Log admin action
     await supabaseAdmin.from('admin_action_logs').insert({
