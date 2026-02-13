@@ -208,6 +208,12 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
     if (!existingPrefs || existingPrefs.length === 0) {
+      // Fetch active base tokens for preferences
+      const { data: baseTokens } = await adminClient
+        .from('base_tokens')
+        .select('id')
+        .eq('is_active', true);
+
       if (baseTokens && baseTokens.length > 0) {
         const prefInserts = baseTokens.map((token) => ({
           user_id: user.id,
@@ -238,7 +244,7 @@ export async function POST(request: NextRequest) {
         : 'All deposit addresses already exist',
       addresses,
       skipped: existingDeploymentIds.size,
-      balances_initialized: baseTokens?.length || 0,
+      balances_initialized: balanceResult.total || 0,
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (error) {
