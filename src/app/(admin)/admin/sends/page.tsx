@@ -595,6 +595,22 @@ export default function SendsPage() {
   );
 }
 
+function EmptyPlaceholderCard() {
+  return (
+    <div className="rounded-xl border-2 border-dashed border-bg-tertiary bg-bg-secondary/50 flex flex-col items-center justify-center py-12 px-6 text-center">
+      <div className="size-12 rounded-full bg-bg-tertiary flex items-center justify-center mb-3">
+        <Layers className="w-5 h-5 text-text-tertiary" />
+      </div>
+      <p className="text-xs font-bold text-text-tertiary uppercase tracking-widest">
+        Awaiting Requests
+      </p>
+      <p className="text-[11px] text-text-tertiary mt-1 max-w-[140px]">
+        New requests will appear here
+      </p>
+    </div>
+  );
+}
+
 // Request Card Component
 function RequestCard({
   request,
