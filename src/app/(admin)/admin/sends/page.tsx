@@ -282,7 +282,6 @@ export default function SendsPage() {
                 </>
               )}
             </Badge>
-            {/* Debug: Show actual role */}
             {process.env.NODE_ENV === 'development' && (
               <Badge variant="outline" className="bg-bg-tertiary text-text-tertiary text-xs">
                 Role: {userRole}
@@ -506,14 +505,15 @@ export default function SendsPage() {
             )}
 
             <div className="space-y-3">
-              <Button
+              {/* Plisio automatic sending — temporarily disabled */}
+              {/* <Button
                 onClick={handleSendAutomatic}
                 className="w-full bg-action-green hover:bg-action-green/90 text-white gap-2"
                 disabled={superAdminApproveMutation.isPending}
               >
                 <Zap className="w-4 h-4" />
                 Send Automatically via Plisio
-              </Button>
+              </Button> */}
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
