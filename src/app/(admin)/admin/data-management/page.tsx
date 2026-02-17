@@ -122,7 +122,7 @@ export default function DataManagementPage() {
       </div>
 
       {/* Tab Content */}
-      <div className="mt-6">
+      <div className="mt-6 lg:mx-16">
         {activeTab === 'user' && (
           <Card>
             <CardHeader>
