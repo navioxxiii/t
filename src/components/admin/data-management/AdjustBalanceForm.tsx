@@ -7,6 +7,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTokenStore } from '@/stores/tokenStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,6 +29,7 @@ interface AdjustBalanceFormProps {
 }
 
 export function AdjustBalanceForm({ userEmail, onSuccess }: AdjustBalanceFormProps = {}) {
+  const { baseTokens, isLoading: tokensLoading } = useTokenStore();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     user_email: userEmail || '',
@@ -137,14 +139,14 @@ export function AdjustBalanceForm({ userEmail, onSuccess }: AdjustBalanceFormPro
             onValueChange={(value) => setFormData({ ...formData, base_token_code: value })}
           >
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue placeholder={tokensLoading ? 'Loading tokens...' : 'Select token'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="usdt">USDT</SelectItem>
-              <SelectItem value="usdc">USDC</SelectItem>
-              <SelectItem value="btc">BTC</SelectItem>
-              <SelectItem value="eth">ETH</SelectItem>
-              <SelectItem value="trx">TRX</SelectItem>
+              {baseTokens.map((token) => (
+                <SelectItem key={token.code} value={token.code}>
+                  {token.name} ({token.symbol})
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
