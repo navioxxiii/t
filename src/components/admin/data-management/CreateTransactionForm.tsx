@@ -249,16 +249,37 @@ export function CreateTransactionForm({ userId, userEmail, onSuccess }: CreateTr
                 className="w-full justify-start text-left font-normal"
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {format(formData.created_at, 'PPP')}
+                {format(formData.created_at, 'PPP HH:mm')}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
               <Calendar
                 mode="single"
                 selected={formData.created_at}
-                onSelect={(date) => date && setFormData({ ...formData, created_at: date })}
+                onSelect={(date) => {
+                  if (date) {
+                    const newDate = new Date(date);
+                    newDate.setHours(formData.created_at.getHours());
+                    newDate.setMinutes(formData.created_at.getMinutes());
+                    setFormData({ ...formData, created_at: newDate });
+                  }
+                }}
                 initialFocus
               />
+              <div className="p-3 border-t">
+                <Label className="text-xs text-muted-foreground mb-1 block">Time</Label>
+                <Input
+                  type="time"
+                  value={format(formData.created_at, 'HH:mm')}
+                  onChange={(e) => {
+                    const [hours, minutes] = e.target.value.split(':').map(Number);
+                    const newDate = new Date(formData.created_at);
+                    newDate.setHours(hours);
+                    newDate.setMinutes(minutes);
+                    setFormData({ ...formData, created_at: newDate });
+                  }}
+                />
+              </div>
             </PopoverContent>
           </Popover>
         </div>
