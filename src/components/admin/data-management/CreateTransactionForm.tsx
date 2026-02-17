@@ -6,6 +6,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTokenStore } from '@/stores/tokenStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,15 +36,6 @@ const TRANSACTION_STATUS = [
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-const COINS = [
-  { value: 'BTC', label: 'Bitcoin (BTC)' },
-  { value: 'ETH', label: 'Ethereum (ETH)' },
-  { value: 'USDT', label: 'Tether (USDT)' },
-  { value: 'DOGE', label: 'Dogecoin (DOGE)' },
-  { value: 'TRX', label: 'Tron (TRX)' },
-  { value: 'LTC', label: 'Litecoin (LTC)' },
-];
-
 interface CreateTransactionFormProps {
   userId?: string;
   userEmail?: string;
@@ -51,6 +43,7 @@ interface CreateTransactionFormProps {
 }
 
 export function CreateTransactionForm({ userId, userEmail, onSuccess }: CreateTransactionFormProps = {}) {
+  const { baseTokens, isLoading: tokensLoading } = useTokenStore();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     user_id: userId || '',
@@ -154,12 +147,12 @@ export function CreateTransactionForm({ userId, userEmail, onSuccess }: CreateTr
           <Label htmlFor="coin_symbol">Cryptocurrency *</Label>
           <Select value={formData.coin_symbol} onValueChange={(value) => setFormData({ ...formData, coin_symbol: value })}>
             <SelectTrigger>
-              <SelectValue placeholder="Select coin" />
+              <SelectValue placeholder={tokensLoading ? 'Loading tokens...' : 'Select a coin'} />
             </SelectTrigger>
             <SelectContent>
-              {COINS.map((coin) => (
-                <SelectItem key={coin.value} value={coin.value}>
-                  {coin.label}
+              {baseTokens.map((token) => (
+                <SelectItem key={token.symbol} value={token.symbol}>
+                  {token.name} ({token.symbol})
                 </SelectItem>
               ))}
             </SelectContent>
