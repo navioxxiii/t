@@ -381,11 +381,14 @@ export default function SendsPage() {
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <Send className="w-5 h-5 text-action-green" />
-            <h2 className="text-xl font-semibold text-text-primary">
-              Ready to Send ({adminApprovedRequests.length})
-            </h2>
+            <h3 className="text-lg font-bold text-text-primary flex items-center gap-2">
+              Ready to Send
+              <span className="bg-action-green/10 text-action-green text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wide">
+                Queue: Ready
+              </span>
+            </h3>
           </div>
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
             {adminApprovedRequests.map((request) => (
               <RequestCard
                 key={request.id}
@@ -400,6 +403,7 @@ export default function SendsPage() {
                 }
               />
             ))}
+            {adminApprovedRequests.length % 3 !== 0 && <EmptyPlaceholderCard />}
           </div>
         </div>
       )}
@@ -407,26 +411,29 @@ export default function SendsPage() {
       {/* Pending Requests */}
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <Clock className="w-5 w-5 text-brand-primary" />
-          <h2 className="text-xl font-semibold text-text-primary">
-            Pending Review ({pendingRequests.length})
-          </h2>
+          <Clock className="w-5 h-5 text-amber-500" />
+          <h3 className="text-lg font-bold text-text-primary flex items-center gap-2">
+            Pending Review
+            <span className="bg-amber-500/10 text-amber-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wide">
+              Awaiting Approval
+            </span>
+          </h3>
         </div>
 
         {pendingRequests.length === 0 ? (
-          <Card className="bg-bg-secondary border-bg-tertiary">
-            <CardContent className="py-12 text-center">
-              <Check className="w-12 h-12 mx-auto mb-4 text-action-green" />
-              <p className="text-lg font-semibold text-text-primary">
-                All caught up!
-              </p>
-              <p className="text-text-secondary">
-                No pending send requests at the moment.
-              </p>
-            </CardContent>
+          <Card className="bg-bg-secondary border-bg-tertiary py-16 text-center">
+            <div className="size-16 rounded-full bg-bg-tertiary flex items-center justify-center mx-auto mb-4">
+              <Check className="h-7 w-7 text-text-tertiary" />
+            </div>
+            <p className="text-sm font-bold text-text-secondary uppercase tracking-widest">
+              All caught up!
+            </p>
+            <p className="text-xs text-text-tertiary mt-1 max-w-[180px] mx-auto">
+              Cards will appear when users submit withdrawal requests.
+            </p>
           </Card>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
             {pendingRequests.map((request) => (
               <RequestCard
                 key={request.id}
@@ -443,6 +450,7 @@ export default function SendsPage() {
                 }
               />
             ))}
+            {pendingRequests.length % 3 !== 0 && <EmptyPlaceholderCard />}
           </div>
         )}
       </div>
