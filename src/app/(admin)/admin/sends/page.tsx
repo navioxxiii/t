@@ -247,6 +247,7 @@ export default function SendsPage() {
   const adminApprovedRequests = pendingSends.filter(
     (s) => s.status === 'admin_approved'
   );
+  const internalTransferCount = pendingSends.filter((s) => s.is_internal_transfer).length;
 
   return (
     <div className="space-y-6">
