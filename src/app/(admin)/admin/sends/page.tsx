@@ -643,183 +643,194 @@ function RequestCard({
     toast.success('Address copied to clipboard!');
   };
 
+  const initials = request.profiles.full_name
+    ? request.profiles.full_name
+        .split(' ')
+        .map((w: string) => w[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    : request.profiles.email.slice(0, 2).toUpperCase();
+
+  const isHighValue = parseFloat(String(request.amount)) >= 1000;
+
   return (
-    <Card
-      className={`bg-bg-secondary ${isAdminApproved ? 'border-action-green/30 border-2' : 'border-bg-tertiary'}`}
+    <div
+      className={cn(
+        'bg-bg-secondary rounded-xl border flex flex-col overflow-hidden',
+        isAdminApproved ? 'border-action-green/30' : 'border-bg-tertiary'
+      )}
     >
-      <CardContent className="pt-6">
-        <div className="space-y-4">
-          {/* Status Badge */}
-          {isAdminApproved && (
-            <div className="flex items-center gap-2 p-3 bg-action-green/10 rounded-lg border border-action-green/20">
-              <CheckCheck className="w-5 h-5 text-action-green" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-action-green">
-                  Admin Approved
-                </p>
-                <p className="text-xs text-text-secondary">
-                  Approved by {request.admin_approver?.email || 'Unknown'} on{' '}
-                  {request.admin_approved_at
-                    ? new Date(request.admin_approved_at).toLocaleString()
-                    : 'Unknown'}
-                </p>
-              </div>
-              {request.processing_type && (
-                <Badge
-                  variant="outline"
-                  className={
-                    request.processing_type === 'automatic'
-                      ? 'bg-blue-500/10 text-blue-500 border-blue-500/20'
-                      : 'bg-orange-500/10 text-orange-500 border-orange-500/20'
-                  }
-                >
-                  {request.processing_type === 'automatic' ? (
-                    <>
-                      <Zap className="w-3 h-3 mr-1" />
-                      Auto
-                    </>
-                  ) : (
-                    <>
-                      <Hand className="w-3 h-3 mr-1" />
-                      Manual
-                    </>
-                  )}
-                </Badge>
-              )}
-            </div>
-          )}
-
-          {/* Internal Transfer Badge */}
-          {request.is_internal_transfer && request.recipient && (
-            <div className="flex items-center gap-2 p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
-              <div className="rounded-full bg-blue-500/20 p-2">
-                <Copy className="w-4 h-4 text-blue-500" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-blue-500">
-                  Internal Transfer
-                </p>
-                <p className="text-xs text-text-secondary">
-                  To: {request.recipient.email}
-                </p>
-              </div>
-              <Badge
-                variant="outline"
-                className="bg-blue-500/10 text-blue-500 border-blue-500/20"
-              >
-                In-App
-              </Badge>
-            </div>
-          )}
-
-          {/* User Info */}
-          <div>
-            <p className="text-sm text-text-secondary">Sender</p>
-            <p className="font-semibold text-text-primary">
+      {/* Card Header */}
+      <div className="p-5 border-b border-bg-tertiary flex justify-between items-start">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="size-10 rounded-full bg-brand-primary/15 flex items-center justify-center shrink-0 text-brand-primary text-sm font-bold">
+            {initials}
+          </div>
+          <div className="min-w-0">
+            <p className="font-semibold text-text-primary text-sm leading-tight truncate">
               {request.profiles.full_name || request.profiles.email}
             </p>
-            <p className="text-xs text-text-tertiary">{request.profiles.email}</p>
-          </div>
-
-          {/* Transaction Details */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="text-sm text-text-secondary">Amount</p>
-              <p className="text-lg font-bold text-text-primary">
-                {request.amount} {request.coin_symbol}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-text-secondary">Network Fee</p>
-              <p className="font-medium text-text-primary">
-                {request.transactions.network_fee || '0'} {request.coin_symbol}
-              </p>
-            </div>
-          </div>
-
-          {/* Address */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-sm text-text-secondary">To Address</p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => copyToClipboard(request.to_address)}
-                className="h-6 px-2"
-              >
-                <Copy className="w-3 h-3" />
-              </Button>
-            </div>
-            <p className="font-mono text-xs break-all text-text-primary">
-              {request.to_address}
-            </p>
-          </div>
-
-          {/* Timestamp */}
-          <div>
-            <p className="text-sm text-text-secondary">Requested</p>
-            <p className="text-sm text-text-primary">
-              {new Date(request.created_at).toLocaleString()}
-            </p>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-2 pt-4 border-t border-bg-tertiary">
-            {isAdminApproved && isSuperAdmin ? (
-              // Super admin processing admin-approved request
-              <Button
-                className="flex-1 bg-action-green hover:bg-action-green/90 text-white"
-                onClick={() => onProcess?.(request)}
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <Send className="w-4 h-4 mr-2" />
-                )}
-                Process Withdrawal
-              </Button>
-            ) : isSuperAdmin ? (
-              // Super admin can directly process pending request
-              <Button
-                className="flex-1 bg-brand-primary text-bg-primary hover:bg-brand-primary-light"
-                onClick={() => onProcess?.(request)}
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <Send className="w-4 h-4 mr-2" />
-                )}
-                Process Withdrawal
-              </Button>
-            ) : (
-              // Regular admin can only approve
-              <Button
-                className="flex-1 bg-brand-primary text-bg-primary hover:bg-brand-primary-light"
-                onClick={() => onApprove?.(request.id)}
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <Check className="w-4 h-4 mr-2" />
-                )}
-                Approve
-              </Button>
-            )}
-            <Button
-              variant="destructive"
-              className="flex-1"
-              onClick={() => onReject(request)}
-              disabled={isProcessing}
-            >
-              <X className="w-4 h-4 mr-2" />
-              Reject
-            </Button>
+            <p className="text-xs text-text-tertiary truncate">{request.profiles.email}</p>
           </div>
         </div>
-      </CardContent>
-    </Card>
+        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+          <span className="bg-bg-tertiary text-text-secondary text-[11px] font-semibold px-2 py-0.5 rounded-full">
+            {request.coin_symbol}
+          </span>
+          {request.is_internal_transfer && (
+            <span className="bg-blue-500/10 text-blue-500 text-[11px] font-semibold px-2 py-0.5 rounded-full">
+              Internal
+            </span>
+          )}
+          {isHighValue && !request.is_internal_transfer && (
+            <span className="bg-amber-500/10 text-amber-500 text-[11px] font-semibold px-2 py-0.5 rounded-full">
+              High Value
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Card Body */}
+      <div className="p-5 space-y-4 flex-1">
+        {/* Amount row */}
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs text-text-tertiary mb-0.5">Request Amount</p>
+            <p className="text-2xl font-bold text-text-primary leading-tight">
+              {request.amount}{' '}
+              <span className="text-base font-semibold text-text-secondary">
+                {request.coin_symbol}
+              </span>
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-text-tertiary mb-0.5">Network Fee</p>
+            <p className="text-sm font-semibold text-text-primary">
+              {request.transactions.network_fee || '0'}{' '}
+              <span className="text-text-secondary font-normal">{request.coin_symbol}</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Admin-approved banner */}
+        {isAdminApproved && (
+          <div className="flex items-center gap-2 p-3 bg-action-green/10 rounded-lg border border-action-green/20">
+            <CheckCheck className="w-4 h-4 text-action-green shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-action-green">Admin Approved</p>
+              <p className="text-[11px] text-text-secondary truncate">
+                By {request.admin_approver?.email || 'Unknown'}
+              </p>
+            </div>
+            {request.processing_type && (
+              <span
+                className={cn(
+                  'text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0',
+                  request.processing_type === 'automatic'
+                    ? 'bg-blue-500/10 text-blue-500'
+                    : 'bg-orange-500/10 text-orange-500'
+                )}
+              >
+                {request.processing_type === 'automatic' ? 'Auto' : 'Manual'}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Internal transfer banner */}
+        {request.is_internal_transfer && request.recipient && (
+          <div className="flex items-center gap-2 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+            <ArrowLeftRight className="w-4 h-4 text-blue-500 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-blue-500">Internal Transfer</p>
+              <p className="text-[11px] text-text-secondary truncate">
+                To: {request.recipient.email}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Address box */}
+        <div className="bg-bg-tertiary/50 p-3 rounded-lg border border-bg-tertiary">
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wide">
+              To Address
+            </p>
+            <button
+              onClick={() => copyToClipboard(request.to_address)}
+              className="text-text-tertiary hover:text-text-primary transition-colors"
+              title="Copy address"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <p className="font-mono text-xs text-text-secondary break-all leading-relaxed">
+            {request.to_address}
+          </p>
+        </div>
+
+        {/* Timestamp */}
+        <div className="flex items-center gap-1.5 text-[11px] text-text-tertiary">
+          <Clock className="w-3 h-3" />
+          <span>{new Date(request.created_at).toLocaleString()}</span>
+        </div>
+      </div>
+
+      {/* Card Footer */}
+      <div className="p-4 bg-bg-tertiary/30 flex gap-3">
+        {isAdminApproved && isSuperAdmin ? (
+          // Super admin processing admin-approved request
+          <Button
+            className="flex-1 bg-amber-500 hover:bg-amber-400 text-black font-semibold"
+            onClick={() => onProcess?.(request)}
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            ) : (
+              <Send className="w-4 h-4 mr-2" />
+            )}
+            Process Withdrawal
+          </Button>
+        ) : isSuperAdmin ? (
+          // Super admin can directly process pending request
+          <Button
+            className="flex-1 bg-amber-500 hover:bg-amber-400 text-black font-semibold"
+            onClick={() => onProcess?.(request)}
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            ) : (
+              <Send className="w-4 h-4 mr-2" />
+            )}
+            Process Withdrawal
+          </Button>
+        ) : (
+          // Regular admin can only approve
+          <Button
+            className="flex-1 bg-brand-primary text-white hover:bg-brand-primary-light"
+            onClick={() => onApprove?.(request.id)}
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            ) : (
+              <Check className="w-4 h-4 mr-2" />
+            )}
+            Approve
+          </Button>
+        )}
+        <Button
+          className="flex-1 bg-action-red/10 hover:bg-action-red text-action-red hover:text-white border border-action-red/20 transition-colors"
+          onClick={() => onReject(request)}
+          disabled={isProcessing}
+        >
+          <X className="w-4 h-4 mr-2" />
+          Reject
+        </Button>
+      </div>
+    </div>
   );
 }
