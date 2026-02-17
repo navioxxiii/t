@@ -198,7 +198,7 @@ export function CreateUserForm() {
 
       <div className="flex items-center justify-between pt-4 border-t">
         <p className="text-sm text-text-secondary">
-          Wallets for BTC, ETH, USDT, DOGE, TRX, and LTC will be created automatically with 0 balance.
+          Wallets for all active tokens will be created automatically with 0 balance.
         </p>
         <Button type="submit" disabled={loading}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
