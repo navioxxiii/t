@@ -305,27 +305,75 @@ export default function SendsPage() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="bg-bg-secondary border-bg-tertiary">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-text-primary">
-              <Clock className="w-5 h-5 text-brand-primary" />
-              Pending Review: {pendingRequests.length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
+      {/* Stats Bar */}
+      <div className={cn('grid grid-cols-1 sm:grid-cols-2 gap-4', isSuperAdmin && 'lg:grid-cols-4')}>
+        {/* Pending Review — all roles */}
+        <div className="bg-bg-secondary p-6 rounded-xl border border-bg-tertiary flex items-center gap-5">
+          <div className="size-12 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+            <Clock className="w-5 h-5 text-amber-500" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-text-tertiary uppercase tracking-widest">
+              Pending Review
+            </p>
+            <p className="text-2xl font-bold text-text-primary">
+              {pendingRequests.length}{' '}
+              <span className="text-sm font-normal text-text-tertiary">Requests</span>
+            </p>
+          </div>
+        </div>
 
+        {/* Ready to Send — super admin only */}
         {isSuperAdmin && (
-          <Card className="bg-bg-secondary border-brand-primary/20 border-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-text-primary">
-                <CheckCheck className="w-5 h-5 text-action-green" />
-                Ready to Send: {adminApprovedRequests.length}
-              </CardTitle>
-            </CardHeader>
-          </Card>
+          <div className="bg-bg-secondary p-6 rounded-xl border border-bg-tertiary flex items-center gap-5">
+            <div className="size-12 rounded-full bg-brand-primary/10 flex items-center justify-center shrink-0">
+              <Send className="w-5 h-5 text-brand-primary" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-text-tertiary uppercase tracking-widest">
+                Ready to Send
+              </p>
+              <p className="text-2xl font-bold text-text-primary">
+                {adminApprovedRequests.length}{' '}
+                <span className="text-sm font-normal text-text-tertiary">Requests</span>
+              </p>
+            </div>
+          </div>
         )}
+
+        {/* Internal Transfers — super admin only */}
+        {isSuperAdmin && (
+          <div className="bg-bg-secondary p-6 rounded-xl border border-bg-tertiary flex items-center gap-5">
+            <div className="size-12 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
+              <ArrowLeftRight className="w-5 h-5 text-blue-500" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-text-tertiary uppercase tracking-widest">
+                Internal Transfers
+              </p>
+              <p className="text-2xl font-bold text-text-primary">
+                {internalTransferCount}{' '}
+                <span className="text-sm font-normal text-text-tertiary">Requests</span>
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Total Queued — all roles */}
+        <div className="bg-bg-secondary p-6 rounded-xl border border-bg-tertiary flex items-center gap-5">
+          <div className="size-12 rounded-full bg-slate-500/10 flex items-center justify-center shrink-0">
+            <Layers className="w-5 h-5 text-slate-400" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-text-tertiary uppercase tracking-widest">
+              Total Queued
+            </p>
+            <p className="text-2xl font-bold text-text-primary">
+              {pendingSends.length}{' '}
+              <span className="text-sm font-normal text-text-tertiary">Total</span>
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Admin Approved Requests (Super Admin Only) */}
