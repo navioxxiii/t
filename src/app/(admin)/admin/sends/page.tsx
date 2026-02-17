@@ -16,7 +16,7 @@ import {
   parseAdminError,
   type PendingSend,
 } from '@/hooks/useAdmin';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -33,6 +33,8 @@ import {
   Copy,
   Zap,
   Hand,
+  ArrowLeftRight,
+  Layers,
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -50,6 +52,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ConfirmActionDialog } from '@/components/shared/ConfirmActionDialog';
 import { useAuthStore } from '@/stores/authStore';
+import { cn } from '@/lib/utils';
 
 export default function SendsPage() {
   const { data, isLoading, isError, error, refetch, isRefetching } = usePendingSends();
