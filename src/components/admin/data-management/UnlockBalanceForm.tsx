@@ -9,8 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Lock } from 'lucide-react';
+import { useTokenStore } from '@/stores/tokenStore';
 
 interface UnlockBalanceFormProps {
   userEmail?: string;
@@ -18,6 +20,7 @@ interface UnlockBalanceFormProps {
 }
 
 export function UnlockBalanceForm({ userEmail, onSuccess }: UnlockBalanceFormProps = {}) {
+  const { baseTokens, isLoading: tokensLoading } = useTokenStore();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     user_email: userEmail || '',
@@ -74,6 +77,22 @@ export function UnlockBalanceForm({ userEmail, onSuccess }: UnlockBalanceFormPro
         <div className="space-y-2">
           <Label>User Email *</Label>
           <Input type="email" value={formData.user_email} onChange={(e) => setFormData({ ...formData, user_email: e.target.value })} required disabled={!!userEmail} />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Token *</Label>
+          <Select value={formData.base_token_code} onValueChange={(value) => setFormData({ ...formData, base_token_code: value })}>
+            <SelectTrigger>
+              <SelectValue placeholder={tokensLoading ? 'Loading tokens...' : 'Select token'} />
+            </SelectTrigger>
+            <SelectContent>
+              {baseTokens.map((token) => (
+                <SelectItem key={token.code} value={token.code}>
+                  {token.name} ({token.symbol})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2">
