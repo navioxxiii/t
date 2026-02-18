@@ -5,14 +5,16 @@
 
 'use client';
 
+import { useState } from 'react';
 import { DataTable } from '@/components/datatable';
 import { ColumnDef } from '@tanstack/react-table';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowUpRight, ArrowDownLeft, Clock, XCircle } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Clock, XCircle, Copy, Check } from 'lucide-react';
 import { useTransactionStats } from '@/hooks/useTransactionStats';
+import { toast } from 'sonner';
 
 // Transaction type from database
 interface Transaction {
@@ -33,6 +35,31 @@ interface Transaction {
 // Extended transaction with user email (from API join)
 interface TransactionWithUser extends Transaction {
   user_email?: string;
+}
+
+function ActionCell({ id }: { id: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(id);
+    toast.success('Transaction ID copied!');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      title={id}
+      className="flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-primary transition-colors font-mono group"
+    >
+      <span className="truncate max-w-[72px]">{id.slice(0, 8)}…</span>
+      {copied
+        ? <Check className="w-3.5 h-3.5 text-action-green shrink-0" />
+        : <Copy className="w-3.5 h-3.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+      }
+    </button>
+  );
 }
 
 // Column definitions for transactions table
@@ -134,6 +161,11 @@ const columns: ColumnDef<TransactionWithUser>[] = [
         {new Date(row.original.created_at).toLocaleString()}
       </span>
     ),
+  },
+  {
+    id: 'actions',
+    header: 'Actions',
+    cell: ({ row }) => <ActionCell id={row.original.id} />,
   },
 ];
 
