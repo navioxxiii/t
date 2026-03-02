@@ -19,6 +19,7 @@ import {
   Database,
   MessageSquare,
   Coins,
+  Mail,
 } from 'lucide-react';
 import { useAdminSupportNotifications } from '@/hooks/useAdminSupportNotifications';
 
@@ -79,6 +80,11 @@ const navItems: NavItem[] = [
     href: '/admin/kyc',
     icon: ShieldCheck,
   },
+  {
+    title: 'Email',
+    href: '/admin/email',
+    icon: Mail,
+  },
   /* ⚠️ TICKETING SYSTEM MIGRATED TO TAWK.TO - Support link commented out
   {
     title: 'Support',
@@ -127,7 +133,7 @@ export function AdminSidebar({ isSuperAdmin = false }: AdminSidebarProps) {
         {filteredItems.map((item) => {
           const Icon = item.icon;
           // For items with sub-routes (like KYC, Settings), use startsWith
-          const hasSubRoutes = ['/admin/kyc', '/admin/settings'].includes(item.href);
+          const hasSubRoutes = ['/admin/kyc', '/admin/settings', '/admin/email'].includes(item.href);
           const isActive = hasSubRoutes
             ? pathname.startsWith(item.href)
             : pathname === item.href;
