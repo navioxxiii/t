@@ -11,10 +11,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { COPY_TRADE_ENABLED } from "@/lib/feature-flags";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { Resend } from "resend";
 import { calculatePnLUpdate } from "@/lib/copy-trade/pnl-simulator";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { getEmailProvider } from "@/lib/email/service";
 
 export async function GET(request: NextRequest) {
   return handleTickCron(request);
@@ -226,8 +224,7 @@ async function handleTickCron(request: NextRequest) {
               );
 
               // TODO: Replace with: await sendCopyTradeSpotAvailableEmail({...})
-              await resend.emails.send({
-                from: "Copy Trade <noreply@yourdomain.com>",
+              await getEmailProvider().sendEmail({
                 to: nextInLine.profile?.email || "",
                 subject: `Your spot is ready - ${trader.name} | Copy Trading`,
                 html: `
