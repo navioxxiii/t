@@ -80,4 +80,5 @@ export const RATE_LIMITS = {
   SUPER_ADMIN_APPROVE: { windowMs: 60000, maxRequests: 10 }, // 10 approvals per minute
   REJECT: { windowMs: 60000, maxRequests: 30 }, // 30 rejections per minute
   MARK_SENT_MANUAL: { windowMs: 60000, maxRequests: 10 }, // 10 manual sends per minute
+  ADMIN_EMAIL_SEND: { windowMs: 3600000, maxRequests: 10 }, // 10 email sends per hour per admin
 };
