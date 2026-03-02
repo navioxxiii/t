@@ -7,12 +7,13 @@ import { Heading, Text, Section } from '@react-email/components';
 import { BaseEmail } from './layouts/BaseEmail';
 import { EmailButton } from './components/EmailButton';
 import {
+  getAppName,
   getDashboardUrl,
-  getSupportUrl,
   getTeamName,
   getSignature,
 } from '../utils/branding';
 import { emailStyles } from '../utils/styles';
+import type { EmailReplyMode } from '../types';
 
 interface CustomEmailProps {
   recipientName?: string;
@@ -20,7 +21,22 @@ interface CustomEmailProps {
   content: string;
   actionUrl?: string;
   actionText?: string;
-  isHtml?: boolean;
+  replyUrl?: string;
+  replyText?: string;
+  replyMode?: EmailReplyMode;
+  category?: string;
+}
+
+function getFooterText(replyMode: EmailReplyMode): string {
+  switch (replyMode) {
+    case 'reply_via_tawk':
+      return 'For assistance, open in-app chat.';
+    case 'reply_via_dashboard':
+      return 'Complete this action in your dashboard.';
+    case 'no_reply':
+    default:
+      return 'This mailbox is not monitored. For help, use the in-app chat.';
+  }
 }
 
 export function CustomEmail({
@@ -29,31 +45,14 @@ export function CustomEmail({
   content,
   actionUrl,
   actionText,
-  isHtml = false,
+  replyUrl,
+  replyText,
+  replyMode = 'no_reply',
 }: CustomEmailProps) {
-  // If content is HTML, we need to render it as HTML
-  // Otherwise, treat it as plain text with line breaks
+  // Always render as plain text with line breaks (no raw HTML injection)
   const renderContent = () => {
-    if (isHtml) {
-      // For HTML content, wrap in a div with HTML
-      // Note: In production, you should sanitize HTML content before passing it
-      return (
-        <div
-          dangerouslySetInnerHTML={{ __html: content }}
-          style={{
-            fontSize: '16px',
-            lineHeight: '26px',
-            color: emailStyles.text.color,
-            marginBottom: '16px',
-          }}
-        />
-      );
-    }
-
-    // For plain text, split by newlines and render as paragraphs
     const paragraphs = content.split('\n\n').filter((p) => p.trim());
     if (paragraphs.length === 0) {
-      // If no paragraphs, just render the content with line breaks
       return (
         <Text style={emailStyles.text}>
           {content.split('\n').map((line, index, array) => (
@@ -82,6 +81,13 @@ export function CustomEmail({
     );
   };
 
+  // Determine CTA button - replyUrl/replyText take priority, then actionUrl/actionText
+  const ctaUrl = replyUrl || actionUrl;
+  const ctaText = replyText || actionText;
+
+  // For no_reply mode without explicit CTA, show "Go to Dashboard"
+  const showDefaultDashboardCta = !ctaUrl && replyMode === 'no_reply';
+
   return (
     <BaseEmail preview={subject}>
       <Heading style={emailStyles.heading}>{subject}</Heading>
@@ -94,20 +100,24 @@ export function CustomEmail({
         {renderContent()}
       </Section>
 
-      {actionUrl && actionText && (
+      {ctaUrl && ctaText && (
         <div style={emailStyles.buttonContainer}>
-          <EmailButton href={actionUrl}>{actionText}</EmailButton>
+          <EmailButton href={ctaUrl}>{ctaText}</EmailButton>
         </div>
       )}
 
-      {!actionUrl && (
+      {showDefaultDashboardCta && (
         <div style={emailStyles.buttonContainer}>
           <EmailButton href={getDashboardUrl()}>Go to Dashboard</EmailButton>
         </div>
       )}
 
       <Text style={emailStyles.text}>
-        If you have any questions, please don&apos;t hesitate to contact our support team.
+        {getFooterText(replyMode)}
+      </Text>
+
+      <Text style={{ fontSize: '12px', lineHeight: '18px', color: '#999999', marginTop: '16px' }}>
+        {getAppName()} will never ask for your password, PIN, or verification codes via email.
       </Text>
 
       <Text style={emailStyles.signature}>

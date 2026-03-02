@@ -192,6 +192,16 @@ export interface SendWithdrawalNotificationParams {
   rejectionReason?: string;
 }
 
+export type EmailReplyMode = 'no_reply' | 'reply_via_tawk' | 'reply_via_dashboard';
+
+export type EmailCategory =
+  | 'announcement'
+  | 'product_update'
+  | 'compliance_kyc'
+  | 'security_alert'
+  | 'transaction_notice'
+  | 'custom';
+
 export interface SendCustomEmailParams {
   email: string | string[];
   subject: string;
@@ -199,6 +209,10 @@ export interface SendCustomEmailParams {
   recipientName?: string;
   actionUrl?: string;
   actionText?: string;
+  replyMode?: EmailReplyMode;
+  replyUrl?: string;
+  replyText?: string;
+  category?: EmailCategory;
 }
 
 export interface SendBatchEmailParams {

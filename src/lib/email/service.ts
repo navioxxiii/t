@@ -35,11 +35,18 @@ class EmailService {
     const finalConfig: EmailConfig = config || {
       provider: 'resend',
       apiKey: process.env.RESEND_API_KEY || '',
-      fromAddress: process.env.EMAIL_FROM_ADDRESS || 'verify@resend.dev',
+      fromAddress: process.env.EMAIL_FROM_ADDRESS || 'no-reply@mail.tethvault.com',
       fromName: process.env.EMAIL_FROM_NAME || branding.name.full,
       replyTo: process.env.EMAIL_REPLY_TO,
       domain: process.env.RESEND_DOMAIN,
     };
+
+    if (!process.env.EMAIL_FROM_ADDRESS) {
+      console.warn('[Email Service] WARNING: EMAIL_FROM_ADDRESS is not set. Falling back to no-reply@mail.tethvault.com');
+    }
+    if (!process.env.RESEND_API_KEY) {
+      console.warn('[Email Service] WARNING: RESEND_API_KEY is not set. Emails will fail to send.');
+    }
 
     this.config = finalConfig;
 

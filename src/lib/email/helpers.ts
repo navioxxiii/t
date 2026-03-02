@@ -241,8 +241,8 @@ export async function sendCustomEmail(
     const provider = getEmailProvider();
     const appName = getAppName();
 
-    // Determine if content is HTML
-    const isHtml = params.content.includes('<') && params.content.includes('>');
+    // Explicit no-reply replyTo for all custom admin emails
+    const replyTo = process.env.EMAIL_FROM_ADDRESS || 'no-reply@mail.tethvault.com';
 
     // For single recipient, use React template
     if (typeof params.email === 'string') {
@@ -253,7 +253,10 @@ export async function sendCustomEmail(
           content: params.content,
           actionUrl: params.actionUrl,
           actionText: params.actionText,
-          isHtml,
+          replyMode: params.replyMode,
+          replyUrl: params.replyUrl,
+          replyText: params.replyText,
+          category: params.category,
         })
       );
 
@@ -261,9 +264,8 @@ export async function sendCustomEmail(
         to: params.email,
         subject: params.subject,
         html,
-        text: isHtml
-          ? params.content.replace(/<[^>]*>/g, '').replace(/\n\s*\n/g, '\n\n')
-          : params.content,
+        text: params.content,
+        replyTo,
       });
 
       if (result.success) {
@@ -281,7 +283,10 @@ export async function sendCustomEmail(
         content: params.content,
         actionUrl: params.actionUrl,
         actionText: params.actionText,
-        isHtml,
+        replyMode: params.replyMode,
+        replyUrl: params.replyUrl,
+        replyText: params.replyText,
+        category: params.category,
       })
     );
 
@@ -297,9 +302,8 @@ export async function sendCustomEmail(
           to: email,
           subject: params.subject,
           html,
-          text: isHtml
-            ? params.content.replace(/<[^>]*>/g, '').replace(/\n\s*\n/g, '\n\n')
-            : params.content,
+          text: params.content,
+          replyTo,
         });
 
         if (result.success) {
