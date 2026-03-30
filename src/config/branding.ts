@@ -6,10 +6,10 @@
 export const branding = {
   // App Identity
   name: {
-    full: 'Tethvault',                    // Full app name
-    short: 'Tethvault',                   // Short name for limited space (home screen, etc.)
-    legal: 'Tethvault Inc.',              // Legal entity name
-    copyright: '© 2024 Tethvault Inc.',   // Copyright notice
+    full: 'Tano Wallet',                    // Full app name
+    short: 'Tano Wallet',                   // Short name for limited space (home screen, etc.)
+    legal: 'Tano Wallet Inc.',              // Legal entity name
+    copyright: '© 2024 Tano Wallet Inc.',   // Copyright notice
   },
 
   // Descriptions
@@ -21,7 +21,7 @@ export const branding = {
 
   // URLs & Routing
   urls: {
-    base: 'https://tethvault.com',   // Base URL - configured at build time
+    base: 'https://www.tanowallet.io',   // Base URL - configured at build time
     startUrl: '/dashboard',
     scope: '/',
   },
@@ -30,7 +30,7 @@ export const branding = {
   logo: {
     src: '/icons/brand/icon-192.png',  // Path to logo image
     size: 32,                          // Logo size in pixels
-    alt: 'Tethvault Logo',             // Alt text for logo
+    alt: 'Tano Wallet Logo',             // Alt text for logo
   },
 
   // Theme Colors (Vault-themed: deep blue/purple with gold accents)
@@ -47,9 +47,9 @@ export const branding = {
 
   // Company/Contact Info
   company: {
-    name: 'Tethvault Inc.',
-    email: 'support@tethvault.com',
-    website: 'https://tethvault.com',
+    name: 'Tano Wallet Inc.',
+    email: 'support@mail.tanowallet.io',
+    website: 'https://www.tanowallet.io',
     address: '123 Vault Street, Digital City, DC 12345',
   },
 
@@ -64,7 +64,7 @@ export const branding = {
   // App Metadata
   metadata: {
     version: '1.0.0',
-    author: 'Tethvault Team',
+    author: 'Tano Wallet Team',
     keywords: ['crypto', 'vault', 'wallet', 'bitcoin', 'ethereum', 'blockchain', 'cryptocurrency', 'defi', 'security'],
     category: 'finance',
     locale: 'en-US',
@@ -221,41 +221,41 @@ export const branding = {
 
     faq: [
       {
-        question: 'What makes Tethvault different from other wallets?',
-        answer: 'Tethvault is built with vault-grade security from the ground up. Unlike typical wallets, we offer multi-signature protection, hardware wallet integration, and advanced security features typically found in institutional custody solutions - but you remain in full control.',
+        question: 'What makes Tano Wallet different from other wallets?',
+        answer: 'Tano Wallet is built with vault-grade security from the ground up. Unlike typical wallets, we offer multi-signature protection, hardware wallet integration, and advanced security features typically found in institutional custody solutions - but you remain in full control.',
       },
       {
-        question: 'Is Tethvault free to use?',
-        answer: 'Yes! Tethvault is completely free to download and use. There are no subscription fees or hidden charges. You only pay standard blockchain network fees when sending transactions.',
+        question: 'Is Tano Wallet free to use?',
+        answer: 'Yes! Tano Wallet is completely free to download and use. There are no subscription fees or hidden charges. You only pay standard blockchain network fees when sending transactions.',
       },
       {
         question: 'Do you have access to my funds?',
-        answer: 'Never. Tethvault is fully self-custodial. Your private keys are encrypted and stored only on your device. We cannot access, freeze, or move your funds under any circumstances.',
+        answer: 'Never. Tano Wallet is fully self-custodial. Your private keys are encrypted and stored only on your device. We cannot access, freeze, or move your funds under any circumstances.',
       },
       {
         question: 'How do I recover my vault if I lose my device?',
         answer: 'When you create your vault, you\'ll receive a 12 or 24-word recovery phrase. This phrase can restore your entire vault on any device. Store it securely offline - anyone with this phrase has full access to your funds.',
       },
       {
-        question: 'Can I use Tethvault with my hardware wallet?',
-        answer: 'Yes! Tethvault supports Ledger and Trezor hardware wallets. You can connect your hardware wallet for maximum security while still enjoying Tethvault\'s interface and features.',
+        question: 'Can I use Tano Wallet with my hardware wallet?',
+        answer: 'Yes! Tano Wallet supports Ledger and Trezor hardware wallets. You can connect your hardware wallet for maximum security while still enjoying Tano Wallet\'s interface and features.',
       },
       {
-        question: 'Which cryptocurrencies does Tethvault support?',
-        answer: 'Tethvault supports 50+ blockchains and 10,000+ tokens including Bitcoin, Ethereum, Solana, Polygon, Avalanche, BSC, Arbitrum, Optimism, and many more. We regularly add support for new chains.',
+        question: 'Which cryptocurrencies does Tano Wallet support?',
+        answer: 'Tano Wallet supports 50+ blockchains and 10,000+ tokens including Bitcoin, Ethereum, Solana, Polygon, Avalanche, BSC, Arbitrum, Optimism, and many more. We regularly add support for new chains.',
       },
       {
         question: 'How secure is the staking feature?',
-        answer: 'Staking through Tethvault is non-custodial. Your staked assets remain in your control through smart contracts. We partner only with audited, reputable staking providers and protocols.',
+        answer: 'Staking through Tano Wallet is non-custodial. Your staked assets remain in your control through smart contracts. We partner only with audited, reputable staking providers and protocols.',
       },
       {
         question: 'Do I need KYC verification?',
-        answer: 'No. Tethvault believes in privacy and decentralization. You can create and use your vault without providing any personal information or identity verification.',
+        answer: 'No. Tano Wallet believes in privacy and decentralization. You can create and use your vault without providing any personal information or identity verification.',
       },
     ],
 
     finalCTA: {
-      headline: 'Open Your Tethvault Today',
+      headline: 'Open Your Tano Wallet Today',
       subheadline: 'Join 500,000+ users protecting their digital wealth with vault-grade security. Get started in under 60 seconds.',
       primaryCTA: 'Open Your Vault',
     },
@@ -307,14 +307,14 @@ export const branding = {
     },
     // Email content
     content: {
-      teamName: 'The Tethvault Team',
+      teamName: 'The Tano Wallet Team',
       supportMessage: 'Your vault, your rules. Need help? Our security team is available 24/7.',
       signature: 'Secure regards',
       tagline: 'Protecting your digital wealth',
     },
     // Email logo (full URL for emails)
     logo: {
-      url: 'https://tethvault.com/icons/brand/icon-192.png',
+      url: 'https://www.tanowallet.io/icons/brand/icon-192.png',
       width: 60,
       height: 60,
     },
