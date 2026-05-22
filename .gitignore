@@ -48,3 +48,4 @@ next-env.d.ts
 rewrite_commits.sh
 tsconfig.tsbuildinfo
 docs
+custom.ts

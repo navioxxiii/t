@@ -3,12 +3,15 @@
  * POST - Send email to individual, filtered group, or all users
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { sendCustomEmail } from '@/lib/email/helpers';
+import { sendCustomEmail, sendCustomEmailBatch } from '@/lib/email/helpers';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/security/rate-limiter';
 import type { EmailReplyMode, EmailCategory } from '@/lib/email/types';
+
+// Give the background send (via after()) headroom on the serverless platform.
+export const maxDuration = 300;
 
 const VALID_CATEGORIES: EmailCategory[] = [
   'announcement',
@@ -279,63 +282,59 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create email history record' }, { status: 500 });
     }
 
-    // Send emails
-    let sentCount = 0;
-    let failedCount = 0;
-    const errors: string[] = [];
-
-    for (const recipient of recipientList) {
+    // Send in the background so the request returns immediately. The history
+    // row is always finalized — even on failure — so it never stays 'sending'.
+    after(async () => {
       try {
-        const result = await sendCustomEmail({
-          email: recipient.email,
+        const { sentCount, failedCount, errors } = await sendCustomEmailBatch({
+          recipients: recipientList.map((r) => ({
+            email: r.email,
+            recipientName: r.full_name || undefined,
+          })),
           subject,
           content,
-          recipientName: recipient.full_name || undefined,
           replyMode: replyMode as EmailReplyMode,
           replyUrl: ctaUrl || undefined,
           replyText: ctaLabel || undefined,
           category: category as EmailCategory,
         });
 
-        if (result.success) {
-          sentCount++;
-        } else {
-          failedCount++;
-          errors.push(`${recipient.email}: ${result.error}`);
-        }
+        const status =
+          failedCount === 0
+            ? 'completed'
+            : sentCount === 0
+            ? 'failed'
+            : 'partial_failed';
+
+        await adminClient
+          .from('email_history')
+          .update({
+            sent_count: sentCount,
+            failed_count: failedCount,
+            status,
+            error_details: errors.length > 0 ? { errors: errors.slice(0, 50) } : null,
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', historyRecord.id);
       } catch (err) {
-        failedCount++;
-        errors.push(`${recipient.email}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        console.error('Background email send failed:', err);
+        await adminClient
+          .from('email_history')
+          .update({
+            status: 'failed',
+            error_details: {
+              errors: [err instanceof Error ? err.message : 'Unknown error'],
+            },
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', historyRecord.id);
       }
-    }
-
-    // Determine final status
-    let status: string;
-    if (failedCount === 0) {
-      status = 'completed';
-    } else if (sentCount === 0) {
-      status = 'failed';
-    } else {
-      status = 'partial_failed';
-    }
-
-    // Update history record
-    await adminClient
-      .from('email_history')
-      .update({
-        sent_count: sentCount,
-        failed_count: failedCount,
-        status,
-        error_details: errors.length > 0 ? { errors: errors.slice(0, 50) } : null,
-        completed_at: new Date().toISOString(),
-      })
-      .eq('id', historyRecord.id);
+    });
 
     return NextResponse.json({
-      success: sentCount > 0,
+      success: true,
+      queued: true,
       recipientCount: recipientList.length,
-      sentCount,
-      failedCount,
       historyId: historyRecord.id,
       ...(skippedEmails.length > 0 && { skippedEmails }),
     });

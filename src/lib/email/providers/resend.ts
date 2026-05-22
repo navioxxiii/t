@@ -67,6 +67,53 @@ export class ResendProvider implements EmailProvider {
   }
 
   /**
+   * Send a list of distinct, personalized emails in one Resend batch request.
+   * Resend caps a batch at 100 emails — callers must chunk accordingly.
+   */
+  async sendBatch(emails: SendEmailParams[]): Promise<SendEmailResult[]> {
+    if (emails.length === 0) return [];
+
+    try {
+      const payload = emails.map((email) => ({
+        from: email.from
+          ? `${email.from.name} <${email.from.email}>`
+          : `${this.defaultFrom.name} <${this.defaultFrom.email}>`,
+        to: Array.isArray(email.to) ? email.to : [email.to],
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+        replyTo: email.replyTo || this.defaultReplyTo,
+        attachments: email.attachments,
+      }));
+
+      const { data, error } = await this.client.batch.send(payload, {
+        batchValidation: 'permissive' as const,
+      });
+
+      // Whole-batch failure: every email in the chunk failed.
+      if (error || !data) {
+        const message = error?.message || 'Batch send failed';
+        return emails.map(() => ({ success: false, error: message }));
+      }
+
+      // Permissive validation: successful emails are sent, `errors` lists the
+      // payload indices that failed. Default everything to success, then mark
+      // the reported failures.
+      const results: SendEmailResult[] = emails.map(() => ({ success: true }));
+      for (const failure of data.errors ?? []) {
+        if (results[failure.index]) {
+          results[failure.index] = { success: false, error: failure.message };
+        }
+      }
+      return results;
+    } catch (error) {
+      console.error('[Resend] Batch send error:', error);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      return emails.map(() => ({ success: false, error: message }));
+    }
+  }
+
+  /**
    * Send batch emails with rate limiting
    * Resend free tier: 10 emails/second
    */

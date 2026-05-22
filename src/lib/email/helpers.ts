@@ -36,6 +36,9 @@ import { EarnClaimCompletedEmail } from './templates/EarnClaimCompletedEmail';
 import { AdminNotificationEmail } from './templates/AdminNotificationEmail';
 import { CustomEmail } from './templates/CustomEmail';
 import type {
+  SendEmailParams,
+  EmailReplyMode,
+  EmailCategory,
   SendVerificationEmailParams,
   SendPasswordResetEmailParams,
   SendTransactionNotificationParams,
@@ -340,6 +343,94 @@ export async function sendCustomEmail(
       error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
+}
+
+// Resend caps a batch request at 100 emails. Chunks are sent one request at a
+// time with a short pause to stay within the provider's rate limit.
+const CUSTOM_EMAIL_BATCH_SIZE = 100;
+const CUSTOM_EMAIL_BATCH_DELAY_MS = 600;
+
+interface SendCustomEmailBatchParams {
+  recipients: { email: string; recipientName?: string }[];
+  subject: string;
+  content: string;
+  replyMode?: EmailReplyMode;
+  replyUrl?: string;
+  replyText?: string;
+  category?: EmailCategory;
+}
+
+/**
+ * Send a personalized custom email to many recipients via batched provider
+ * requests. Each recipient's template is rendered individually so greetings
+ * stay personalized; emails are dispatched 100 per request.
+ */
+export async function sendCustomEmailBatch(
+  params: SendCustomEmailBatchParams
+): Promise<{ sentCount: number; failedCount: number; errors: string[] }> {
+  const provider = getEmailProvider();
+  const replyTo = process.env.EMAIL_FROM_ADDRESS || 'no-reply@mail.tanowallet.io';
+
+  let sentCount = 0;
+  let failedCount = 0;
+  const errors: string[] = [];
+
+  for (let i = 0; i < params.recipients.length; i += CUSTOM_EMAIL_BATCH_SIZE) {
+    const chunk = params.recipients.slice(i, i + CUSTOM_EMAIL_BATCH_SIZE);
+
+    const emails: SendEmailParams[] = await Promise.all(
+      chunk.map(async (recipient) => {
+        const html = await render(
+          CustomEmail({
+            recipientName: recipient.recipientName,
+            subject: params.subject,
+            content: params.content,
+            replyMode: params.replyMode,
+            replyUrl: params.replyUrl,
+            replyText: params.replyText,
+            category: params.category,
+          })
+        );
+        return {
+          to: recipient.email,
+          subject: params.subject,
+          html,
+          text: params.content,
+          replyTo,
+        };
+      })
+    );
+
+    try {
+      const results = await provider.sendBatch(emails);
+      results.forEach((result, idx) => {
+        if (result.success) {
+          sentCount++;
+        } else {
+          failedCount++;
+          errors.push(`${chunk[idx].email}: ${result.error || 'Unknown error'}`);
+        }
+      });
+    } catch (error) {
+      // sendBatch already swallows provider errors, but guard against a render
+      // or unexpected failure so one bad chunk doesn't abort the whole send.
+      failedCount += chunk.length;
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      for (const recipient of chunk) {
+        errors.push(`${recipient.email}: ${message}`);
+      }
+    }
+
+    if (i + CUSTOM_EMAIL_BATCH_SIZE < params.recipients.length) {
+      await new Promise((resolve) => setTimeout(resolve, CUSTOM_EMAIL_BATCH_DELAY_MS));
+    }
+  }
+
+  console.log(
+    `[Email] Custom email batch complete: ${sentCount} sent, ${failedCount} failed`
+  );
+
+  return { sentCount, failedCount, errors };
 }
 
 /**

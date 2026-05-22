@@ -224,8 +224,21 @@ export function useSendEmail() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['admin-email-history'] });
 
-      toast.success('Email Sent', {
-        description: `Successfully sent to ${data.sentCount} of ${data.recipientCount} recipients.`,
+      if (data.testMode) {
+        if (data.success) {
+          toast.success('Test Email Sent', {
+            description: 'Check your inbox for the test email.',
+          });
+        } else {
+          toast.error('Test Email Failed', {
+            description: data.error || 'Unknown error',
+          });
+        }
+        return;
+      }
+
+      toast.success('Email Queued', {
+        description: `Sending to ${data.recipientCount} recipient(s). Track progress in the History tab.`,
       });
     },
     onError: (error: Error) => {

@@ -10,6 +10,11 @@
 export interface EmailProvider {
   sendEmail(params: SendEmailParams): Promise<SendEmailResult>;
   sendBatchEmail(params: BatchEmailParams): Promise<BatchEmailResult>;
+  /**
+   * Send a list of distinct (personalized) emails in a single provider call.
+   * Returns one result per input email, aligned to input order.
+   */
+  sendBatch(emails: SendEmailParams[]): Promise<SendEmailResult[]>;
 }
 
 // ============================================
