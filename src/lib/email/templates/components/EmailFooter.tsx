@@ -62,7 +62,7 @@ const divider = {
 const footerSection = {
   backgroundColor: '#FAFAF7',
   padding: '24px 40px 28px',
-  textAlign: 'left' as const,
+  textAlign: 'center' as const,
 };
 
 const brandLine = {
