@@ -3,9 +3,14 @@
  * For admin-sent custom emails to users
  */
 
-import { Heading, Text, Section } from '@react-email/components';
+import { Heading, Text } from '@react-email/components';
 import { BaseEmail } from './layouts/BaseEmail';
 import { EmailButton } from './components/EmailButton';
+import {
+  Divider,
+  SecurityNote,
+  CTAGroup,
+} from './components/EmailPrimitives';
 import {
   getAppName,
   getDashboardUrl,
@@ -30,7 +35,7 @@ interface CustomEmailProps {
 function getFooterText(replyMode: EmailReplyMode): string {
   switch (replyMode) {
     case 'reply_via_tawk':
-      return 'For assistance, open in-app chat.';
+      return 'For assistance, open the in-app chat.';
     case 'reply_via_dashboard':
       return 'Complete this action in your dashboard.';
     case 'no_reply':
@@ -81,44 +86,49 @@ export function CustomEmail({
     );
   };
 
-  // Determine CTA button - replyUrl/replyText take priority, then actionUrl/actionText
   const ctaUrl = replyUrl || actionUrl;
   const ctaText = replyText || actionText;
-
-  // For no_reply mode without explicit CTA, show "Go to Dashboard"
   const showDefaultDashboardCta = !ctaUrl && replyMode === 'no_reply';
+  const hasCta = Boolean(ctaUrl && ctaText) || showDefaultDashboardCta;
 
   return (
     <BaseEmail preview={subject}>
-      <Heading style={emailStyles.heading}>{subject}</Heading>
+      <Heading style={emailStyles.heading} className="tw-h1">
+        {subject}
+      </Heading>
 
       {recipientName && (
         <Text style={emailStyles.text}>Hi {recipientName},</Text>
       )}
 
-      <Section style={emailStyles.neutralBox}>
-        {renderContent()}
-      </Section>
+      {renderContent()}
 
-      {ctaUrl && ctaText && (
-        <div style={emailStyles.buttonContainer}>
-          <EmailButton href={ctaUrl}>{ctaText}</EmailButton>
-        </div>
+      {hasCta && (
+        <>
+          <Divider />
+          <CTAGroup caption={getFooterText(replyMode)}>
+            {ctaUrl && ctaText ? (
+              <EmailButton href={ctaUrl}>{ctaText}</EmailButton>
+            ) : (
+              <EmailButton href={getDashboardUrl()}>
+                Go to dashboard
+              </EmailButton>
+            )}
+          </CTAGroup>
+        </>
       )}
 
-      {showDefaultDashboardCta && (
-        <div style={emailStyles.buttonContainer}>
-          <EmailButton href={getDashboardUrl()}>Go to Dashboard</EmailButton>
-        </div>
+      {!hasCta && (
+        <Text style={emailStyles.textSecondary}>
+          {getFooterText(replyMode)}
+        </Text>
       )}
 
-      <Text style={emailStyles.text}>
-        {getFooterText(replyMode)}
-      </Text>
-
-      <Text style={{ fontSize: '12px', lineHeight: '18px', color: '#999999', marginTop: '16px' }}>
-        {getAppName()} will never ask for your password, PIN, or verification codes via email.
-      </Text>
+      <SecurityNote title="Stay vigilant">
+        {getAppName()} will never ask for your password, PIN, or verification
+        codes by email. If a message claims otherwise, it&apos;s a phishing
+        attempt.
+      </SecurityNote>
 
       <Text style={emailStyles.signature}>
         {getSignature()},

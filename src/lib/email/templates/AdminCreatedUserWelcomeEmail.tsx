@@ -1,13 +1,26 @@
 /**
  * Admin Created User Welcome Email Template
- * Sent to users created by admin with temporary password
+ * Sent to users created by admin with a temporary password
  */
 
-import { Heading, Text, Section } from '@react-email/components';
+import { Heading, Section, Text } from '@react-email/components';
 import { BaseEmail } from './layouts/BaseEmail';
 import { EmailButton } from './components/EmailButton';
-import { getEmailUrl, getAppName, getTeamName, getSupportMessage, getSignature } from '../utils/branding';
+import {
+  Eyebrow,
+  SectionLabel,
+  Divider,
+  SecurityNote,
+  CTAGroup,
+} from './components/EmailPrimitives';
+import {
+  getEmailUrl,
+  getAppName,
+  getTeamName,
+  getSignature,
+} from '../utils/branding';
 import { emailStyles } from '../utils/styles';
+import { branding } from '@/config/branding';
 
 interface AdminCreatedUserWelcomeEmailProps {
   recipientName: string;
@@ -24,54 +37,60 @@ export function AdminCreatedUserWelcomeEmail({
 }: AdminCreatedUserWelcomeEmailProps) {
   const appName = getAppName();
   const finalLoginUrl = loginUrl || getEmailUrl('/login');
-  const finalChangePasswordUrl = changePasswordUrl || getEmailUrl('/settings/security');
+  const finalChangePasswordUrl =
+    changePasswordUrl || getEmailUrl('/settings/security');
 
   return (
-    <BaseEmail preview={`Welcome! Your account has been created`}>
-      <Heading style={emailStyles.heading}>Welcome to {appName}! 🎉</Heading>
-
-      <Text style={emailStyles.text}>Hi {recipientName},</Text>
+    <BaseEmail preview={`Your ${appName} account is ready`}>
+      <Eyebrow>Account Created</Eyebrow>
+      <Heading style={emailStyles.heading} className="tw-h1">
+        Welcome to {appName}, {recipientName}
+      </Heading>
 
       <Text style={emailStyles.text}>
-        Your account has been created by our admin team. Welcome to {appName}! Your account is ready to use.
+        An administrator has created an account for you. Sign in with the
+        temporary password below — you&apos;ll be prompted to set a new one
+        right away.
       </Text>
 
-      <Section style={emailStyles.warningBox}>
-        <Text style={emailStyles.warningTitle}>Important: Temporary Password</Text>
-        <Text style={emailStyles.warningText}>
-          Your temporary password is: <strong>{tempPassword}</strong>
-          <br />
-          <br />
-          <strong>Please change your password immediately after logging in for security.</strong>
-        </Text>
-      </Section>
+      <Divider />
 
-      <Section style={emailStyles.infoBox}>
-        <Text style={emailStyles.infoText}>
-          <strong>Next Steps:</strong>
-          <br />
-          1. Log in with your email and the temporary password above
-          <br />
-          2. Change your password immediately
-          <br />
-          3. Set up your security preferences
-          <br />
-          4. Start using your wallet
-        </Text>
+      <SectionLabel>Temporary password</SectionLabel>
+      <Section style={tempPasswordBox}>
+        <Text style={tempPasswordText}>{tempPassword}</Text>
       </Section>
+      <Text style={emailStyles.textSecondary}>
+        This password is single-use and expires after your first sign-in.
+      </Text>
 
-      <div style={emailStyles.buttonContainer}>
-        <EmailButton href={finalLoginUrl}>Log In Now</EmailButton>
-        <div style={{ marginTop: '12px' }}>
+      <Divider />
+
+      <SectionLabel>Next steps</SectionLabel>
+      <Text style={emailStyles.text}>
+        1. Sign in with your email and the password above.
+        <br />
+        2. Set a strong new password and a transaction PIN.
+        <br />
+        3. Enable two-factor authentication.
+        <br />
+        4. Start using your wallet.
+      </Text>
+
+      <Divider />
+
+      <CTAGroup>
+        <EmailButton href={finalLoginUrl}>Sign in</EmailButton>
+        <div style={{ marginTop: 12 }}>
           <EmailButton href={finalChangePasswordUrl} variant="secondary">
-            Change Password
+            Change password
           </EmailButton>
         </div>
-      </div>
+      </CTAGroup>
 
-      <Text style={emailStyles.text}>
-        {getSupportMessage()}
-      </Text>
+      <SecurityNote title="Keep this password private">
+        {appName} will never ask for your password by email, phone, or chat.
+        If anyone requests it, treat it as a phishing attempt.
+      </SecurityNote>
 
       <Text style={emailStyles.signature}>
         {getSignature()},
@@ -81,3 +100,22 @@ export function AdminCreatedUserWelcomeEmail({
     </BaseEmail>
   );
 }
+
+const tempPasswordBox = {
+  backgroundColor: '#FAFAF7',
+  borderRadius: '10px',
+  borderLeft: `3px solid ${branding.email.colors.primary}`,
+  padding: '16px 20px',
+  margin: '0 0 12px',
+};
+
+const tempPasswordText = {
+  fontFamily:
+    'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
+  fontSize: '18px',
+  fontWeight: 700,
+  letterSpacing: '0.5px',
+  color: branding.email.colors.text,
+  margin: 0,
+  wordBreak: 'break-all' as const,
+};

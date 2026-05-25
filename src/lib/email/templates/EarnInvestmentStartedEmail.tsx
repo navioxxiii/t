@@ -3,9 +3,17 @@
  * Sent when user starts an earn investment
  */
 
-import { Heading, Text, Section } from '@react-email/components';
+import { Heading, Text } from '@react-email/components';
 import { BaseEmail } from './layouts/BaseEmail';
 import { EmailButton } from './components/EmailButton';
+import {
+  Eyebrow,
+  SectionLabel,
+  Divider,
+  SecurityNote,
+  DetailRow,
+  CTAGroup,
+} from './components/EmailPrimitives';
 import { getEarnUrl, getTeamName, getSignature } from '../utils/branding';
 import { emailStyles } from '../utils/styles';
 
@@ -28,54 +36,55 @@ export function EarnInvestmentStartedEmail({
   totalProfit,
   matureDate,
 }: EarnInvestmentStartedEmailProps) {
+  const matureLabel = new Date(matureDate).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
   return (
-    <BaseEmail preview={`Earn investment started: ${vaultTitle}`}>
-      <Heading style={emailStyles.heading}>Earn Investment Started! 💰</Heading>
-
-      <Text style={emailStyles.text}>Hi {recipientName},</Text>
-
-      <Text style={emailStyles.text}>
-        Your earn investment has been successfully started! Your funds are now locked in the <strong>{vaultTitle}</strong> vault and will start earning passive income.
-      </Text>
-
-      <Section style={emailStyles.successBox}>
-        <Text style={emailStyles.successTitle}>Investment Details:</Text>
-        <Text style={emailStyles.successText}>
-          <strong>Vault:</strong> {vaultTitle}
-          <br />
-          <strong>Investment Amount:</strong> {investmentAmount.toFixed(2)} USDT
-          <br />
-          <strong>APY:</strong> {apyPercent}%
-          <br />
-          <strong>Duration:</strong> {durationMonths} {durationMonths === 1 ? 'month' : 'months'}
-          <br />
-          <strong>Expected Profit:</strong> {totalProfit.toFixed(2)} USDT
-          <br />
-          <strong>Maturity Date:</strong> {new Date(matureDate).toLocaleDateString()}
-        </Text>
-      </Section>
-
-      <Section style={emailStyles.infoBox}>
-        <Text style={emailStyles.infoText}>
-          <strong>How it works:</strong>
-          <br />
-          • Your funds are locked until the maturity date
-          <br />
-          • You&apos;ll earn daily profits automatically
-          <br />
-          • You can claim your principal + profit after maturity
-          <br />
-          • Track your earnings in real-time
-        </Text>
-      </Section>
-
-      <div style={emailStyles.buttonContainer}>
-        <EmailButton href={getEarnUrl()}>View Position</EmailButton>
-      </div>
+    <BaseEmail preview={`Earn started: ${vaultTitle}`}>
+      <Eyebrow>Earn</Eyebrow>
+      <Heading style={emailStyles.heading} className="tw-h1">
+        Your {vaultTitle} position is live
+      </Heading>
 
       <Text style={emailStyles.text}>
-        Your investment is now active and earning! You can track your position and see your profits grow in real-time from your dashboard.
+        Hi {recipientName} — your funds are locked in the vault and accruing
+        yield daily. You&apos;ll be able to claim your principal plus earned
+        profit on the maturity date below.
       </Text>
+
+      <Divider />
+
+      <SectionLabel>Investment</SectionLabel>
+      <DetailRow label="Vault" value={vaultTitle} />
+      <DetailRow
+        label="Investment"
+        value={`${investmentAmount.toFixed(2)} USDT`}
+      />
+      <DetailRow label="APY" value={`${apyPercent}%`} />
+      <DetailRow
+        label="Duration"
+        value={`${durationMonths} ${durationMonths === 1 ? 'month' : 'months'}`}
+      />
+      <DetailRow
+        label="Expected profit"
+        value={`${totalProfit.toFixed(2)} USDT`}
+      />
+      <DetailRow label="Matures on" value={matureLabel} />
+
+      <Divider />
+
+      <CTAGroup caption="Track daily accrual in real time from your dashboard.">
+        <EmailButton href={getEarnUrl()}>View position</EmailButton>
+      </CTAGroup>
+
+      <SecurityNote title="About early exits">
+        Funds are locked until maturity. Early withdrawals, where supported,
+        forfeit accrued yield. Always review the vault terms before adding
+        more capital.
+      </SecurityNote>
 
       <Text style={emailStyles.signature}>
         {getSignature()},

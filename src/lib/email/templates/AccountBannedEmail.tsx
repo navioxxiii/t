@@ -1,13 +1,22 @@
 /**
  * Account Banned Email Template
- * Sent when user account is banned
+ * Sent when user account is suspended
  */
 
-import { Heading, Text, Section } from '@react-email/components';
+import { Heading, Section, Text } from '@react-email/components';
 import { BaseEmail } from './layouts/BaseEmail';
 import { EmailButton } from './components/EmailButton';
-import { getSupportUrl, getTeamName, getSupportMessage, getSignature } from '../utils/branding';
+import {
+  Eyebrow,
+  SectionLabel,
+  Divider,
+  SecurityNote,
+  DetailRow,
+  CTAGroup,
+} from './components/EmailPrimitives';
+import { getSupportUrl, getTeamName, getSignature } from '../utils/branding';
 import { emailStyles } from '../utils/styles';
+import { branding } from '@/config/branding';
 
 interface AccountBannedEmailProps {
   recipientName: string;
@@ -24,44 +33,60 @@ export function AccountBannedEmail({
 }: AccountBannedEmailProps) {
   return (
     <BaseEmail preview="Your account has been suspended">
-      <Heading style={{ ...emailStyles.heading, color: '#dc2626' }}>Account Suspended</Heading>
-
-      <Text style={emailStyles.text}>Hi {recipientName},</Text>
+      <Eyebrow>Account</Eyebrow>
+      <Heading
+        style={{ ...emailStyles.heading, color: branding.email.colors.error }}
+        className="tw-h1"
+      >
+        Your account has been suspended
+      </Heading>
 
       <Text style={emailStyles.text}>
-        We regret to inform you that your account has been temporarily suspended. This action was taken in accordance with our Terms of Service.
+        Hi {recipientName} — access to your Tano account has been temporarily
+        suspended under our Terms of Service. Your funds remain safe in the
+        vault.
       </Text>
 
+      <Divider />
+
+      <SectionLabel>Reason</SectionLabel>
       <Section style={emailStyles.errorBox}>
-        <Text style={emailStyles.errorTitle}>Reason for Suspension:</Text>
         <Text style={emailStyles.errorText}>{reason}</Text>
-        {bannedAt && (
-          <Text style={emailStyles.errorText}>
-            <br />
-            <strong>Suspended on:</strong> {new Date(bannedAt).toLocaleString()}
-          </Text>
-        )}
       </Section>
 
-      <Section style={emailStyles.neutralBox}>
-        <Text style={emailStyles.neutralText}>
-          <strong>What this means:</strong>
-          <br />
-          • You cannot access your account or make transactions
-          <br />
-          • Your funds remain secure in your account
-          <br />
-          • You can contact support to discuss your account status
-        </Text>
-      </Section>
+      {bannedAt && (
+        <>
+          <SectionLabel>Effective</SectionLabel>
+          <DetailRow
+            label="Suspended on"
+            value={new Date(bannedAt).toLocaleString()}
+          />
+          <div style={{ height: 12 }} />
+        </>
+      )}
 
-      <div style={emailStyles.buttonContainer}>
-        <EmailButton href={supportUrl || getSupportUrl()}>Contact Support</EmailButton>
-      </div>
-
+      <SectionLabel>What this means</SectionLabel>
       <Text style={emailStyles.text}>
-        If you believe this is an error or would like to appeal this decision, {getSupportMessage()}
+        • You can&apos;t sign in or make transactions while suspended.
+        <br />
+        • Your balances remain secure and untouched.
+        <br />
+        • You can appeal this decision through support.
       </Text>
+
+      <Divider />
+
+      <CTAGroup caption="Our compliance team will respond to appeals within 2 business days.">
+        <EmailButton href={supportUrl || getSupportUrl()}>
+          Contact support
+        </EmailButton>
+      </CTAGroup>
+
+      <SecurityNote title="Why we take this step">
+        Suspensions protect every Tano account holder when our compliance
+        program identifies activity that may breach our terms or applicable
+        law. Each case is reviewed by a member of our team.
+      </SecurityNote>
 
       <Text style={emailStyles.signature}>
         {getSignature()},

@@ -3,9 +3,17 @@
  * Sent when user claims their earn investment
  */
 
-import { Heading, Text, Section } from '@react-email/components';
+import { Heading, Text } from '@react-email/components';
 import { BaseEmail } from './layouts/BaseEmail';
 import { EmailButton } from './components/EmailButton';
+import {
+  Eyebrow,
+  SectionLabel,
+  Divider,
+  SecurityNote,
+  DetailRow,
+  CTAGroup,
+} from './components/EmailPrimitives';
 import { getEarnUrl, getTeamName, getSignature } from '../utils/branding';
 import { emailStyles } from '../utils/styles';
 
@@ -25,41 +33,38 @@ export function EarnClaimCompletedEmail({
   totalPayout,
 }: EarnClaimCompletedEmailProps) {
   return (
-    <BaseEmail preview={`Earn claim completed: ${totalPayout.toFixed(2)} USDT`}>
-      <Heading style={emailStyles.heading}>Earn Investment Claimed! 🎉</Heading>
-
-      <Text style={emailStyles.text}>Hi {recipientName},</Text>
-
-      <Text style={emailStyles.text}>
-        Congratulations! Your earn investment in <strong>{vaultTitle}</strong> has matured and your funds have been successfully claimed.
-      </Text>
-
-      <Section style={emailStyles.successBox}>
-        <Text style={emailStyles.successTitle}>Payout Summary:</Text>
-        <Text style={emailStyles.successText}>
-          <strong>Vault:</strong> {vaultTitle}
-          <br />
-          <strong>Principal:</strong> {principal.toFixed(2)} USDT
-          <br />
-          <strong>Profit Earned:</strong> {profit.toFixed(2)} USDT
-          <br />
-          <strong>Total Payout:</strong> {totalPayout.toFixed(2)} USDT
-        </Text>
-      </Section>
-
-      <Section style={emailStyles.infoBox}>
-        <Text style={emailStyles.infoText}>
-          ✅ Your funds have been credited to your wallet. You can now use them for new investments, withdrawals, or other transactions.
-        </Text>
-      </Section>
-
-      <div style={emailStyles.buttonContainer}>
-        <EmailButton href={getEarnUrl()}>View Portfolio</EmailButton>
-      </div>
+    <BaseEmail preview={`Earn payout: ${totalPayout.toFixed(2)} USDT credited`}>
+      <Eyebrow>Earn</Eyebrow>
+      <Heading style={emailStyles.heading} className="tw-h1">
+        Your {vaultTitle} position has matured
+      </Heading>
 
       <Text style={emailStyles.text}>
-        Thank you for using our earn feature! We hope you enjoyed earning passive income. You can start a new investment anytime.
+        Hi {recipientName} — your principal and earned profit have been
+        credited to your wallet and are available immediately.
       </Text>
+
+      <Divider />
+
+      <SectionLabel>Payout</SectionLabel>
+      <DetailRow label="Vault" value={vaultTitle} />
+      <DetailRow label="Principal" value={`${principal.toFixed(2)} USDT`} />
+      <DetailRow label="Profit earned" value={`${profit.toFixed(2)} USDT`} />
+      <DetailRow
+        label="Total credited"
+        value={`${totalPayout.toFixed(2)} USDT`}
+      />
+
+      <Divider />
+
+      <CTAGroup caption="Reinvest, withdraw, or hold — your funds are unlocked.">
+        <EmailButton href={getEarnUrl()}>View portfolio</EmailButton>
+      </CTAGroup>
+
+      <SecurityNote title="Looking for a tax record?">
+        Your full earn history is available on the activity page and can be
+        exported as CSV any time from the dashboard.
+      </SecurityNote>
 
       <Text style={emailStyles.signature}>
         {getSignature()},

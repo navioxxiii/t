@@ -6,6 +6,14 @@
 import { Heading, Text } from '@react-email/components';
 import { BaseEmail } from './layouts/BaseEmail';
 import { EmailButton } from './components/EmailButton';
+import {
+  Eyebrow,
+  SectionLabel,
+  Divider,
+  SecurityNote,
+  DetailRow,
+  CTAGroup,
+} from './components/EmailPrimitives';
 import { getTeamName, getSignature } from '../utils/branding';
 import { emailStyles } from '../utils/styles';
 
@@ -26,49 +34,46 @@ export function SupportTicketCreatedEmail({
   ticketUrl,
   isGuest,
 }: SupportTicketCreatedEmailProps) {
-  const preview = `Support ticket #${ticketNumber} has been created`;
-
   return (
-    <BaseEmail preview={preview}>
-      <Heading style={emailStyles.heading}>Support Ticket Created</Heading>
+    <BaseEmail preview={`Support ticket #${ticketNumber} has been created`}>
+      <Eyebrow>Support Ticket</Eyebrow>
+      <Heading style={emailStyles.heading} className="tw-h1">
+        We&apos;ve received your request
+      </Heading>
 
       {recipientName && (
         <Text style={emailStyles.text}>Hi {recipientName},</Text>
       )}
 
       <Text style={emailStyles.text}>
-        Thank you for contacting our support team. Your ticket has been created
-        and our team will review it shortly.
+        Thanks for reaching out. A member of our support team will reply within
+        24 hours — usually much sooner.
       </Text>
 
-      <div style={emailStyles.neutralBox}>
-        <Text style={emailStyles.neutralTitle}>Ticket Details</Text>
-        <Text style={emailStyles.neutralText}>
-          <strong>Ticket Number:</strong> #{ticketNumber}
-        </Text>
-        <Text style={emailStyles.neutralText}>
-          <strong>Subject:</strong> {subject}
-        </Text>
-        <Text style={emailStyles.neutralText}>
-          <strong>Category:</strong> {formatCategory(category)}
-        </Text>
-      </div>
+      <Divider />
 
-      <Text style={emailStyles.text}>
-        Our support team typically responds within 24 hours. You can view the
-        status of your ticket and reply to messages by clicking the button below.
-      </Text>
+      <SectionLabel>Ticket details</SectionLabel>
+      <DetailRow label="Ticket number" value={`#${ticketNumber}`} />
+      <DetailRow label="Subject" value={subject} />
+      <DetailRow label="Category" value={formatCategory(category)} />
 
-      {isGuest && (
-        <Text style={{ ...emailStyles.text, color: '#f97316', fontWeight: 500 }}>
-          Important: Save this email! You will need the link below to access
-          your ticket.
-        </Text>
-      )}
+      <Divider />
 
-      <div style={emailStyles.buttonContainer}>
-        <EmailButton href={ticketUrl}>View Support Ticket</EmailButton>
-      </div>
+      <CTAGroup
+        caption={
+          isGuest
+            ? 'Save this email — the link below is how you reach your ticket.'
+            : 'You can also find this ticket in the Support area of your dashboard.'
+        }
+      >
+        <EmailButton href={ticketUrl}>View ticket</EmailButton>
+      </CTAGroup>
+
+      <SecurityNote title="A reminder while you wait">
+        Our team will never ask for your password, PIN, or recovery phrase to
+        resolve a ticket. If someone claiming to be Tano support does, please
+        report it.
+      </SecurityNote>
 
       <Text style={emailStyles.signature}>
         {getSignature()},

@@ -6,6 +6,11 @@
 import { Heading, Text } from '@react-email/components';
 import { BaseEmail } from './layouts/BaseEmail';
 import { EmailButton } from './components/EmailButton';
+import {
+  Eyebrow,
+  Divider,
+  CTAGroup,
+} from './components/EmailPrimitives';
 import { getTeamName, getSignature } from '../utils/branding';
 import { emailStyles } from '../utils/styles';
 
@@ -20,28 +25,30 @@ export function SupportTicketInactivityReminderEmail({
   ticketUrl,
   ticketNumber,
 }: SupportTicketInactivityReminderEmailProps) {
-  const preview = `Action required for your support ticket #${ticketNumber}`;
-
   return (
-    <BaseEmail preview={preview}>
-      <Heading style={emailStyles.heading}>Regarding Ticket #{ticketNumber}</Heading>
+    <BaseEmail
+      preview={`Reminder: your reply is needed on ticket #${ticketNumber}`}
+    >
+      <Eyebrow>Support Ticket</Eyebrow>
+      <Heading style={emailStyles.heading} className="tw-h1">
+        We&apos;re waiting on your reply
+      </Heading>
 
       {recipientName && (
         <Text style={emailStyles.text}>Hi {recipientName},</Text>
       )}
 
       <Text style={emailStyles.text}>
-        We are waiting for your response on support ticket #{ticketNumber}.
-        Please provide an update so we can continue to assist you.
+        Ticket <strong>#{ticketNumber}</strong> is paused, waiting on a
+        response from you. Without one, we&apos;ll close the ticket soon — you
+        can always open a new one later if you need to.
       </Text>
 
-      <Text style={emailStyles.text}>
-        If we don&apos;t hear back from you, this ticket will be automatically closed soon.
-      </Text>
+      <Divider />
 
-      <div style={emailStyles.buttonContainer}>
-        <EmailButton href={ticketUrl}>View Support Ticket</EmailButton>
-      </div>
+      <CTAGroup caption="A quick reply is enough to keep the conversation open.">
+        <EmailButton href={ticketUrl}>Reply to ticket</EmailButton>
+      </CTAGroup>
 
       <Text style={emailStyles.signature}>
         {getSignature()},
