@@ -41,6 +41,7 @@
     "cmdk": "^1.1.1",
     "coingecko-api-v3": "^0.0.31",
     "date-fns": "^4.1.0",
+    "email-reply-parser": "^2.3.5",
     "framer-motion": "^12.23.24",
     "lightweight-charts": "^5.0.9",
     "lucide-react": "^0.552.0",
@@ -54,6 +55,7 @@
     "react-qr-code": "^2.0.18",
     "resend": "^6.4.2",
     "sonner": "^2.0.7",
+    "svix": "^1.94.0",
     "tailwind-merge": "^3.3.1",
     "vaul": "^1.1.2",
     "zustand": "^5.0.9"
