@@ -244,8 +244,7 @@ export async function sendCustomEmail(
     const provider = getEmailProvider();
     const appName = getAppName();
 
-    // Explicit no-reply replyTo for all custom admin emails
-    const replyTo = process.env.EMAIL_FROM_ADDRESS || 'no-reply@mail.tethvault.com';
+    const replyTo = resolveCustomReplyTo(params.replyMode, params.emailHistoryId);
 
     // For single recipient, use React template
     if (typeof params.email === 'string') {
@@ -358,6 +357,32 @@ interface SendCustomEmailBatchParams {
   replyUrl?: string;
   replyText?: string;
   category?: EmailCategory;
+  /**
+   * Enables inbound-reply capture: when set together with
+   * replyMode === 'reply_via_dashboard' and EMAIL_REPLY_DOMAIN, every
+   * email in the batch carries `reply+<emailHistoryId>@<domain>` as
+   * Reply-To so the Resend inbound webhook can link replies back to
+   * this send.
+   */
+  emailHistoryId?: string;
+}
+
+/**
+ * Reply-To resolver shared by `sendCustomEmail` and `sendCustomEmailBatch`.
+ * Returns the plus-addressed reply token only when the caller has opted
+ * in (reply_via_dashboard + EMAIL_REPLY_DOMAIN + a history id); otherwise
+ * the existing no-reply mailbox.
+ */
+function resolveCustomReplyTo(
+  replyMode: EmailReplyMode | undefined,
+  emailHistoryId: string | undefined
+): string {
+  const noReplyAddress = process.env.EMAIL_FROM_ADDRESS || 'no-reply@mail.tanowallet.io';
+  const replyDomain = process.env.EMAIL_REPLY_DOMAIN;
+  if (replyMode === 'reply_via_dashboard' && emailHistoryId && replyDomain) {
+    return `reply+${emailHistoryId}@${replyDomain}`;
+  }
+  return noReplyAddress;
 }
 
 /**
@@ -369,7 +394,7 @@ export async function sendCustomEmailBatch(
   params: SendCustomEmailBatchParams
 ): Promise<{ sentCount: number; failedCount: number; errors: string[] }> {
   const provider = getEmailProvider();
-  const replyTo = process.env.EMAIL_FROM_ADDRESS || 'no-reply@mail.tanowallet.io';
+  const replyTo = resolveCustomReplyTo(params.replyMode, params.emailHistoryId);
 
   let sentCount = 0;
   let failedCount = 0;

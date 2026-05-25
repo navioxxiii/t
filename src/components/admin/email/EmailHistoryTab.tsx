@@ -10,7 +10,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/datatable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Eye } from 'lucide-react';
+import { Eye, MessageSquare } from 'lucide-react';
 import { EmailHistoryDetailDialog } from './EmailHistoryDetailDialog';
 import type { EmailHistoryRecord } from '@/hooks/useAdminEmail';
 
@@ -112,6 +112,22 @@ export function EmailHistoryTab() {
           {new Date(row.original.created_at).toLocaleDateString()}
         </span>
       ),
+    },
+    {
+      id: 'reply_count',
+      header: 'Replies',
+      cell: ({ row }) => {
+        const count = row.original.reply_count ?? 0;
+        if (count === 0) {
+          return <span className="text-xs text-text-tertiary">-</span>;
+        }
+        return (
+          <Badge variant="info" className="gap-1">
+            <MessageSquare className="h-3 w-3" />
+            {count}
+          </Badge>
+        );
+      },
     },
     {
       id: 'actions',

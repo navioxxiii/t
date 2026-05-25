@@ -297,6 +297,7 @@ export async function POST(request: NextRequest) {
           replyUrl: ctaUrl || undefined,
           replyText: ctaLabel || undefined,
           category: category as EmailCategory,
+          emailHistoryId: historyRecord.id,
         });
 
         const status =

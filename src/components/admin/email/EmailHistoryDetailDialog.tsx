@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { EmailHistoryRecord } from '@/hooks/useAdminEmail';
+import { EmailRepliesSection } from './EmailRepliesSection';
 
 interface EmailHistoryDetailDialogProps {
   open: boolean;
@@ -134,6 +135,11 @@ export function EmailHistoryDetailDialog({ open, onOpenChange, record }: EmailHi
                 ))}
               </div>
             </div>
+          )}
+
+          {/* User Replies — only when this send was sent in reply-via-dashboard mode */}
+          {record.reply_mode === 'reply_via_dashboard' && (
+            <EmailRepliesSection historyId={record.id} />
           )}
         </div>
         <div className="flex justify-end pt-2">

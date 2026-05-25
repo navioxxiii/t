@@ -67,10 +67,13 @@ export async function GET(request: NextRequest) {
 
     const { count: totalCount } = await countQuery;
 
-    // Build data query
+    // Build data query — embeds an aggregate `email_replies(count)` so each
+    // row carries `reply_count` for the history-table badge in one round trip.
     let query = adminClient
       .from('email_history')
-      .select('*, sent_by_profile:profiles!email_history_sent_by_fkey(email, full_name)');
+      .select(
+        '*, sent_by_profile:profiles!email_history_sent_by_fkey(email, full_name), email_replies(count)'
+      );
 
     if (globalFilter) {
       query = query.ilike('subject', `%${globalFilter}%`);
@@ -99,8 +102,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch history' }, { status: 500 });
     }
 
+    // Flatten the embedded aggregate to a flat `reply_count` number.
+    const data = (history || []).map((row) => {
+      const { email_replies, ...rest } = row as typeof row & {
+        email_replies?: { count: number }[];
+      };
+      return {
+        ...rest,
+        reply_count: email_replies?.[0]?.count ?? 0,
+      };
+    });
+
     return NextResponse.json({
-      data: history || [],
+      data,
       total: totalCount || 0,
     });
   } catch (error) {

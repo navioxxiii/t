@@ -45,6 +45,32 @@ export interface EmailHistoryRecord {
   created_at: string;
   completed_at: string | null;
   sent_by_profile?: { email: string; full_name: string | null } | null;
+  reply_count?: number;
+}
+
+export interface EmailReplyAttachment {
+  filename: string;
+  contentType: string;
+  size: number;
+  signedUrl: string | null;
+}
+
+export interface EmailReply {
+  id: string;
+  email_history_id: string | null;
+  user_id: string | null;
+  from_email: string;
+  from_name: string | null;
+  to_email: string;
+  subject: string | null;
+  body_text: string | null;
+  body_html: string | null;
+  body_clean: string | null;
+  attachments: EmailReplyAttachment[];
+  is_read: boolean;
+  received_at: string;
+  created_at: string;
+  user?: { email: string; full_name: string | null } | null;
 }
 
 export interface SendEmailPayload {
@@ -172,6 +198,35 @@ export function useEmailHistory(params: HistoryQueryParams = {}) {
       }
       return response.json() as Promise<{ data: EmailHistoryRecord[]; total: number }>;
     },
+    staleTime: 30000,
+  });
+}
+
+interface RepliesQueryParams {
+  historyId?: string;
+  isRead?: 'true' | 'false';
+  pageIndex?: number;
+  pageSize?: number;
+}
+
+export function useEmailReplies(params: RepliesQueryParams = {}) {
+  const queryParams = new URLSearchParams();
+  if (params.historyId) queryParams.set('historyId', params.historyId);
+  if (params.isRead) queryParams.set('isRead', params.isRead);
+  if (params.pageIndex !== undefined) queryParams.set('pageIndex', params.pageIndex.toString());
+  if (params.pageSize !== undefined) queryParams.set('pageSize', params.pageSize.toString());
+
+  return useQuery({
+    queryKey: ['admin-email-replies', params],
+    queryFn: async () => {
+      const response = await fetch(`/api/admin/email/replies?${queryParams.toString()}`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch replies');
+      }
+      return response.json() as Promise<{ data: EmailReply[]; total: number }>;
+    },
+    enabled: !!params.historyId,
     staleTime: 30000,
   });
 }
@@ -310,6 +365,36 @@ export function useUpdateEmailTemplate() {
     },
     onError: (error: Error) => {
       toast.error('Failed to Update Template', {
+        description: error.message,
+      });
+    },
+  });
+}
+
+export function useMarkReplyRead() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, is_read }: { id: string; is_read: boolean }) => {
+      const response = await fetch(`/api/admin/email/replies/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_read }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update reply');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-email-replies'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-email-history'] });
+    },
+    onError: (error: Error) => {
+      toast.error('Failed to Update Reply', {
         description: error.message,
       });
     },

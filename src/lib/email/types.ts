@@ -218,6 +218,13 @@ export interface SendCustomEmailParams {
   replyUrl?: string;
   replyText?: string;
   category?: EmailCategory;
+  /**
+   * When set together with replyMode === 'reply_via_dashboard' and
+   * EMAIL_REPLY_DOMAIN env, the Reply-To header is set to
+   * `reply+<emailHistoryId>@<EMAIL_REPLY_DOMAIN>` so user replies are
+   * captured by the inbound webhook and linked back to this send.
+   */
+  emailHistoryId?: string;
 }
 
 export interface SendBatchEmailParams {
