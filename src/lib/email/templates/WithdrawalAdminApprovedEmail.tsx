@@ -3,9 +3,17 @@
  * Sent when withdrawal is approved by admin (awaiting super admin)
  */
 
-import { Heading, Text, Section } from '@react-email/components';
+import { Heading, Text } from '@react-email/components';
 import { BaseEmail } from './layouts/BaseEmail';
 import { EmailButton } from './components/EmailButton';
+import {
+  Eyebrow,
+  SectionLabel,
+  Divider,
+  SecurityNote,
+  DetailRow,
+  CTAGroup,
+} from './components/EmailPrimitives';
 import { getActivityUrl, getTeamName, getSignature } from '../utils/branding';
 import { emailStyles } from '../utils/styles';
 
@@ -23,47 +31,38 @@ export function WithdrawalAdminApprovedEmail({
   address,
 }: WithdrawalAdminApprovedEmailProps) {
   return (
-    <BaseEmail preview={`Withdrawal approved by admin: ${amount} ${coinSymbol}`}>
-      <Heading style={emailStyles.heading}>Withdrawal Approved by Admin</Heading>
-
-      <Text style={emailStyles.text}>Hi {recipientName},</Text>
-
-      <Text style={emailStyles.text}>
-        Your withdrawal request has been approved by an admin and is now pending final approval from a super admin before being processed.
-      </Text>
-
-      <Section style={emailStyles.infoBox}>
-        <Text style={emailStyles.infoTitle}>Withdrawal Details:</Text>
-        <Text style={emailStyles.infoText}>
-          <strong>Amount:</strong> {amount} {coinSymbol}
-          <br />
-          <strong>To Address:</strong> {address}
-          <br />
-          <strong>Status:</strong> Awaiting Super Admin Approval
-        </Text>
-      </Section>
-
-      <Section style={emailStyles.warningBox}>
-        <Text style={emailStyles.warningText}>
-          <strong>What happens next:</strong>
-          <br />
-          • Your request is now in the final approval stage
-          <br />
-          • A super admin will review and process your withdrawal
-          <br />
-          • You&apos;ll receive another email once the withdrawal is sent
-          <br />
-          • This usually takes a few hours
-        </Text>
-      </Section>
-
-      <div style={emailStyles.buttonContainer}>
-        <EmailButton href={getActivityUrl()}>View Transaction</EmailButton>
-      </div>
+    <BaseEmail
+      preview={`Withdrawal in final review: ${amount} ${coinSymbol}`}
+    >
+      <Eyebrow>Withdrawal</Eyebrow>
+      <Heading style={emailStyles.heading} className="tw-h1">
+        Your withdrawal is in final review
+      </Heading>
 
       <Text style={emailStyles.text}>
-        We&apos;ll notify you as soon as your withdrawal is processed. Thank you for your patience!
+        Hi {recipientName}, the first approval is complete. A second authorised
+        signer needs to sign off before funds leave the vault — this usually
+        takes a few hours.
       </Text>
+
+      <Divider />
+
+      <SectionLabel>Request</SectionLabel>
+      <DetailRow label="Amount" value={`${amount} ${coinSymbol}`} />
+      <DetailRow label="Destination" value={address} mono />
+      <DetailRow label="Status" value="Awaiting final approval" />
+
+      <Divider />
+
+      <CTAGroup caption="We'll email you again the moment funds are sent.">
+        <EmailButton href={getActivityUrl()}>View status</EmailButton>
+      </CTAGroup>
+
+      <SecurityNote title="Two signatures for every withdrawal">
+        Tano requires two independent approvals on every outbound transaction.
+        It adds a few hours, but it&apos;s the single biggest reason no
+        customer has ever lost funds to a compromised key on our side.
+      </SecurityNote>
 
       <Text style={emailStyles.signature}>
         {getSignature()},

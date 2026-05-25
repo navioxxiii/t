@@ -3,9 +3,17 @@
  * Sent when KYC verification is approved
  */
 
-import { Heading, Text, Section } from '@react-email/components';
+import { Heading, Text } from '@react-email/components';
 import { BaseEmail } from './layouts/BaseEmail';
 import { EmailButton } from './components/EmailButton';
+import {
+  Eyebrow,
+  SectionLabel,
+  Divider,
+  SecurityNote,
+  DetailRow,
+  CTAGroup,
+} from './components/EmailPrimitives';
 import { getDashboardUrl, getTeamName, getSignature } from '../utils/branding';
 import { emailStyles } from '../utils/styles';
 
@@ -28,59 +36,69 @@ export function KYCApprovalEmail({
   const getTierDisplay = () => {
     switch (tier) {
       case 'tier_1_basic':
-        return 'Tier 1 - Basic';
+        return 'Tier 1 — Basic';
       case 'tier_2_advanced':
-        return 'Tier 2 - Advanced';
+        return 'Tier 2 — Advanced';
       case 'tier_3_enhanced':
-        return 'Tier 3 - Enhanced';
+        return 'Tier 3 — Enhanced';
       default:
         return tier;
     }
   };
 
   return (
-    <BaseEmail preview="Your KYC verification has been approved">
-      <Heading style={emailStyles.heading}>KYC Verification Approved! 🎉</Heading>
-
-      <Text style={emailStyles.text}>Hi {recipientName},</Text>
-
-      <Text style={emailStyles.text}>
-        Great news! Your KYC (Know Your Customer) verification has been successfully approved. Your account now has enhanced features and higher transaction limits.
-      </Text>
-
-      <Section style={emailStyles.successBox}>
-        <Text style={emailStyles.successTitle}>Verification Details:</Text>
-        <Text style={emailStyles.successText}>
-          <strong>Verification Tier:</strong> {getTierDisplay()}
-          {verificationDate && (
-            <>
-              <br />
-              <strong>Verified On:</strong> {new Date(verificationDate).toLocaleDateString()}
-            </>
-          )}
-        </Text>
-      </Section>
-
-      <Section style={emailStyles.infoBox}>
-        <Text style={emailStyles.infoTitle}>Your New Transaction Limits:</Text>
-        <Text style={emailStyles.infoText}>
-          <strong>Daily Limit:</strong> ${limits.daily_limit_usd.toLocaleString()} USD
-          {limits.monthly_limit_usd && (
-            <>
-              <br />
-              <strong>Monthly Limit:</strong> ${limits.monthly_limit_usd.toLocaleString()} USD
-            </>
-          )}
-        </Text>
-      </Section>
-
-      <div style={emailStyles.buttonContainer}>
-        <EmailButton href={getDashboardUrl()}>Go to Dashboard</EmailButton>
-      </div>
+    <BaseEmail preview="Your identity has been verified">
+      <Eyebrow>KYC Verification</Eyebrow>
+      <Heading style={emailStyles.heading} className="tw-h1">
+        Your identity has been verified
+      </Heading>
 
       <Text style={emailStyles.text}>
-        You can now enjoy all the benefits of a verified account, including higher transaction limits and access to advanced features. Thank you for completing the verification process!
+        Hi {recipientName}, your KYC review is complete. Your account is now at{' '}
+        <strong>{getTierDisplay()}</strong> with the expanded limits below.
       </Text>
+
+      <Divider />
+
+      <SectionLabel>Verification</SectionLabel>
+      <DetailRow label="Tier" value={getTierDisplay()} />
+      {verificationDate && (
+        <DetailRow
+          label="Verified on"
+          value={new Date(verificationDate).toLocaleDateString(undefined, {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })}
+        />
+      )}
+
+      <div style={{ height: 28 }} />
+
+      <SectionLabel>Transaction limits</SectionLabel>
+      <DetailRow
+        label="Daily"
+        value={`$${limits.daily_limit_usd.toLocaleString()} USD`}
+      />
+      {limits.monthly_limit_usd && (
+        <DetailRow
+          label="Monthly"
+          value={`$${limits.monthly_limit_usd.toLocaleString()} USD`}
+        />
+      )}
+
+      <Divider />
+
+      <CTAGroup caption="Sign in with your existing credentials">
+        <EmailButton href={getDashboardUrl()}>Go to dashboard</EmailButton>
+      </CTAGroup>
+
+      <SecurityNote title="Why we verify">
+        Tano Wallet is registered as an asset service provider and is
+        required by law to verify the identity of every account holder. Your
+        documents are encrypted in transit and at rest, reviewed only by our
+        compliance team, and never shared with third parties.
+      </SecurityNote>
 
       <Text style={emailStyles.signature}>
         {getSignature()},

@@ -3,11 +3,25 @@
  * Sent when a withdrawal fails to process
  */
 
-import { Heading, Text, Section } from '@react-email/components';
+import { Heading, Section, Text } from '@react-email/components';
 import { BaseEmail } from './layouts/BaseEmail';
 import { EmailButton } from './components/EmailButton';
-import { getSupportUrl, getActivityUrl, getTeamName, getSupportMessage, getSignature } from '../utils/branding';
+import {
+  Eyebrow,
+  SectionLabel,
+  Divider,
+  SecurityNote,
+  DetailRow,
+  CTAGroup,
+} from './components/EmailPrimitives';
+import {
+  getSupportUrl,
+  getActivityUrl,
+  getTeamName,
+  getSignature,
+} from '../utils/branding';
 import { emailStyles } from '../utils/styles';
+import { branding } from '@/config/branding';
 
 interface WithdrawalFailedEmailProps {
   recipientName: string;
@@ -25,53 +39,61 @@ export function WithdrawalFailedEmail({
   supportUrl,
 }: WithdrawalFailedEmailProps) {
   return (
-    <BaseEmail preview={`Withdrawal failed: ${amount} ${coinSymbol}`}>
-      <Heading style={{ ...emailStyles.heading, color: '#dc2626' }}>Withdrawal Processing Failed</Heading>
-
-      <Text style={emailStyles.text}>Hi {recipientName},</Text>
+    <BaseEmail preview={`Withdrawal couldn't be completed: ${amount} ${coinSymbol}`}>
+      <Eyebrow>Withdrawal</Eyebrow>
+      <Heading
+        style={{ ...emailStyles.heading, color: branding.email.colors.error }}
+        className="tw-h1"
+      >
+        Withdrawal couldn&apos;t be completed
+      </Heading>
 
       <Text style={emailStyles.text}>
-        We encountered an issue while processing your withdrawal request. Your funds have been returned to your wallet balance and are safe.
+        Hi {recipientName} — we hit an issue while processing this transaction.
+        Your funds never left the vault and are back in your wallet balance
+        right now.
       </Text>
 
-      <Section style={emailStyles.neutralBox}>
-        <Text style={emailStyles.neutralTitle}>Withdrawal Details:</Text>
-        <Text style={emailStyles.neutralText}>
-          <strong>Amount:</strong> {amount} {coinSymbol}
-          <br />
-          <strong>Status:</strong> Failed
-        </Text>
-      </Section>
+      <Divider />
 
+      <SectionLabel>Request</SectionLabel>
+      <DetailRow label="Amount" value={`${amount} ${coinSymbol}`} />
+      <DetailRow label="Status" value="Failed — funds returned" />
+
+      <div style={{ height: 28 }} />
+
+      <SectionLabel>What went wrong</SectionLabel>
       <Section style={emailStyles.errorBox}>
-        <Text style={emailStyles.errorTitle}>Error Details:</Text>
         <Text style={emailStyles.errorText}>{errorMessage}</Text>
       </Section>
 
-      <Section style={emailStyles.infoBox}>
-        <Text style={emailStyles.infoText}>
-          <strong>What this means:</strong>
-          <br />
-          • Your funds are safe and have been returned to your wallet
-          <br />
-          • You can try the withdrawal again
-          <br />
-          • If the issue persists, please contact support
-        </Text>
-      </Section>
+      <SectionLabel>Next steps</SectionLabel>
+      <Text style={emailStyles.text}>
+        • Your balance is fully restored and available to use.
+        <br />
+        • You can retry the withdrawal from your activity page.
+        <br />
+        • If the same error happens again, our support team can investigate.
+      </Text>
 
-      <div style={emailStyles.buttonContainer}>
-        <EmailButton href={supportUrl || getSupportUrl()}>Contact Support</EmailButton>
-        <div style={{ marginTop: '12px' }}>
+      <Divider />
+
+      <CTAGroup>
+        <EmailButton href={supportUrl || getSupportUrl()}>
+          Contact support
+        </EmailButton>
+        <div style={{ marginTop: 12 }}>
           <EmailButton href={getActivityUrl()} variant="secondary">
-            View Transaction
+            View activity
           </EmailButton>
         </div>
-      </div>
+      </CTAGroup>
 
-      <Text style={emailStyles.text}>
-        We apologize for the inconvenience. Our team is working to resolve this issue. {getSupportMessage()}
-      </Text>
+      <SecurityNote title="Your funds are safe">
+        Tano holds customer balances in segregated vaults. A failed transaction
+        is reversed at the protocol level — funds are returned before this
+        email is sent, never held in limbo.
+      </SecurityNote>
 
       <Text style={emailStyles.signature}>
         {getSignature()},

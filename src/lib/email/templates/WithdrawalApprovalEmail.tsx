@@ -3,10 +3,22 @@
  * Sent when a withdrawal is approved and sent
  */
 
-import { Heading, Text, Section } from '@react-email/components';
+import { Heading, Text } from '@react-email/components';
 import { BaseEmail } from './layouts/BaseEmail';
 import { EmailButton } from './components/EmailButton';
-import { getActivityUrl, getTeamName, getSupportMessage, getSignature } from '../utils/branding';
+import {
+  Eyebrow,
+  SectionLabel,
+  Divider,
+  SecurityNote,
+  DetailRow,
+  CTAGroup,
+} from './components/EmailPrimitives';
+import {
+  getActivityUrl,
+  getTeamName,
+  getSignature,
+} from '../utils/branding';
 import { emailStyles } from '../utils/styles';
 
 interface WithdrawalApprovalEmailProps {
@@ -25,39 +37,35 @@ export function WithdrawalApprovalEmail({
   txHash,
 }: WithdrawalApprovalEmailProps) {
   return (
-    <BaseEmail preview={`Withdrawal approved: ${amount} ${coinSymbol}`}>
-      <Heading style={emailStyles.heading}>Withdrawal Approved ✅</Heading>
-
-      <Text style={emailStyles.text}>Hi {recipientName},</Text>
+    <BaseEmail preview={`Withdrawal sent: ${amount} ${coinSymbol}`}>
+      <Eyebrow>Withdrawal</Eyebrow>
+      <Heading style={emailStyles.heading} className="tw-h1">
+        Your withdrawal is on its way
+      </Heading>
 
       <Text style={emailStyles.text}>
-        Good news! Your withdrawal request has been approved and processed successfully.
+        Hi {recipientName}, we&apos;ve sent your withdrawal. Confirmation time
+        depends on the network — most settle within a few minutes.
       </Text>
 
-      <Section style={emailStyles.successBox}>
-        <Text style={emailStyles.successTitle}>Withdrawal Details:</Text>
-        <Text style={emailStyles.successText}>
-          <strong>Amount:</strong> {amount} {coinSymbol}
-          <br />
-          <strong>To Address:</strong> {address}
-          {txHash && (
-            <>
-              <br />
-              <strong>Transaction Hash:</strong> {txHash}
-            </>
-          )}
-        </Text>
-      </Section>
+      <Divider />
 
-      <div style={emailStyles.buttonContainer}>
-        <EmailButton href={getActivityUrl()}>View Transaction</EmailButton>
-      </div>
+      <SectionLabel>Transaction</SectionLabel>
+      <DetailRow label="Amount" value={`${amount} ${coinSymbol}`} />
+      <DetailRow label="Destination" value={address} mono />
+      {txHash && <DetailRow label="Transaction hash" value={txHash} mono />}
 
-      <Section style={emailStyles.warningBox}>
-        <Text style={emailStyles.warningText}>
-          <strong>Important:</strong> Please verify the transaction on the blockchain. If you notice any issues, contact our support team immediately.
-        </Text>
-      </Section>
+      <Divider />
+
+      <CTAGroup caption="Verify on a blockchain explorer using the hash above.">
+        <EmailButton href={getActivityUrl()}>View transaction</EmailButton>
+      </CTAGroup>
+
+      <SecurityNote title="Didn't make this withdrawal?">
+        Contact our support team immediately. Tano will never ask you to send
+        crypto to recover an unauthorized transaction — anyone who does is
+        attempting fraud.
+      </SecurityNote>
 
       <Text style={emailStyles.signature}>
         {getSignature()},
@@ -67,4 +75,3 @@ export function WithdrawalApprovalEmail({
     </BaseEmail>
   );
 }
-

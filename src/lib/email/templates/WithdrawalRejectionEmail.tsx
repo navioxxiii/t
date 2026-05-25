@@ -3,10 +3,23 @@
  * Sent when a withdrawal request is rejected
  */
 
-import { Heading, Text, Section } from '@react-email/components';
+import { Heading, Section, Text } from '@react-email/components';
 import { BaseEmail } from './layouts/BaseEmail';
 import { EmailButton } from './components/EmailButton';
-import { getSupportUrl, getDashboardUrl, getTeamName, getSupportMessage, getSignature } from '../utils/branding';
+import {
+  Eyebrow,
+  SectionLabel,
+  Divider,
+  SecurityNote,
+  DetailRow,
+  CTAGroup,
+} from './components/EmailPrimitives';
+import {
+  getSupportUrl,
+  getDashboardUrl,
+  getTeamName,
+  getSignature,
+} from '../utils/branding';
 import { emailStyles } from '../utils/styles';
 
 interface WithdrawalRejectionEmailProps {
@@ -25,41 +38,47 @@ export function WithdrawalRejectionEmail({
   rejectionReason,
 }: WithdrawalRejectionEmailProps) {
   return (
-    <BaseEmail preview={`Withdrawal rejected: ${amount} ${coinSymbol}`}>
-      <Heading style={emailStyles.heading}>Withdrawal Request Rejected</Heading>
-
-      <Text style={emailStyles.text}>Hi {recipientName},</Text>
+    <BaseEmail preview={`Withdrawal not processed: ${amount} ${coinSymbol}`}>
+      <Eyebrow>Withdrawal</Eyebrow>
+      <Heading style={emailStyles.heading} className="tw-h1">
+        We couldn&apos;t process this withdrawal
+      </Heading>
 
       <Text style={emailStyles.text}>
-        We regret to inform you that your withdrawal request has been rejected. Your funds have been returned to your wallet balance.
+        Hi {recipientName} — your withdrawal request was reviewed and not
+        approved. Your funds have been returned to your wallet balance and are
+        available immediately.
       </Text>
 
-      <Section style={emailStyles.neutralBox}>
-        <Text style={emailStyles.neutralTitle}>Withdrawal Details:</Text>
-        <Text style={emailStyles.neutralText}>
-          <strong>Amount:</strong> {amount} {coinSymbol}
-          <br />
-          <strong>To Address:</strong> {address}
-        </Text>
-      </Section>
+      <Divider />
 
+      <SectionLabel>Request</SectionLabel>
+      <DetailRow label="Amount" value={`${amount} ${coinSymbol}`} />
+      <DetailRow label="Destination" value={address} mono />
+
+      <div style={{ height: 28 }} />
+
+      <SectionLabel>Reason</SectionLabel>
       <Section style={emailStyles.errorBox}>
-        <Text style={emailStyles.errorTitle}>Rejection Reason:</Text>
         <Text style={emailStyles.errorText}>{rejectionReason}</Text>
       </Section>
 
-      <div style={emailStyles.buttonContainer}>
-        <EmailButton href={getSupportUrl()}>Contact Support</EmailButton>
-        <div style={{ marginTop: '12px' }}>
+      <Divider />
+
+      <CTAGroup caption="Our compliance team can clarify the decision if needed.">
+        <EmailButton href={getSupportUrl()}>Contact support</EmailButton>
+        <div style={{ marginTop: 12 }}>
           <EmailButton href={getDashboardUrl()} variant="secondary">
-            Go to Dashboard
+            Go to dashboard
           </EmailButton>
         </div>
-      </div>
+      </CTAGroup>
 
-      <Text style={emailStyles.text}>
-        If you have questions about this decision or need assistance, {getSupportMessage()}
-      </Text>
+      <SecurityNote title="Why we review every withdrawal">
+        Each withdrawal is screened as part of our anti-money-laundering
+        program. Reviews protect every Tano account holder and are required by
+        the regulations we operate under.
+      </SecurityNote>
 
       <Text style={emailStyles.signature}>
         {getSignature()},
@@ -69,4 +88,3 @@ export function WithdrawalRejectionEmail({
     </BaseEmail>
   );
 }
-
