@@ -1,155 +1,181 @@
 /**
  * Shared Email Styles
- * Reusable style objects using branding colors
+ * Premium fintech styling — serif headline, soft tinted blocks (no heavy borders),
+ * gold-anchored accent system. All keys preserved for backwards compatibility
+ * with existing templates.
  */
 
 import { branding } from '@/config/branding';
 
 const colors = branding.email.colors;
 
+const sansStack =
+  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+const serifStack = 'Georgia, "Times New Roman", serif';
+
 export const emailStyles = {
   heading: {
-    fontSize: '28px',
-    fontWeight: '700',
+    fontFamily: serifStack,
+    fontSize: '26px',
+    lineHeight: '34px',
+    fontWeight: '600',
+    letterSpacing: '-0.2px',
     color: colors.text,
-    marginBottom: '24px',
-    textAlign: 'center' as const,
+    margin: '0 0 16px',
+    textAlign: 'left' as const,
   },
   text: {
+    fontFamily: sansStack,
     fontSize: '16px',
     lineHeight: '26px',
     color: colors.text,
-    marginBottom: '16px',
+    margin: '0 0 16px',
   },
   textSecondary: {
-    fontSize: '16px',
-    lineHeight: '26px',
+    fontFamily: sansStack,
+    fontSize: '15px',
+    lineHeight: '24px',
     color: colors.textSecondary,
-    marginBottom: '16px',
+    margin: '0 0 16px',
   },
   signature: {
-    fontSize: '16px',
-    lineHeight: '26px',
-    color: colors.text,
-    marginTop: '32px',
+    fontFamily: sansStack,
+    fontSize: '15px',
+    lineHeight: '24px',
+    color: colors.textSecondary,
+    margin: '32px 0 0',
   },
   buttonContainer: {
     textAlign: 'center' as const,
     margin: '32px 0',
   },
-  // Info boxes
+
+  // Soft tinted blocks — no heavy borders, gentle radius, on-brand colors.
+  // Title + text keys retained for template compatibility.
+
+  // Info (blue wash)
   infoBox: {
     backgroundColor: colors.infoBg,
-    border: `1px solid ${colors.info}`,
-    borderRadius: '8px',
-    padding: '20px',
+    borderRadius: '10px',
+    padding: '18px 20px',
     margin: '24px 0',
   },
   infoTitle: {
-    fontSize: '16px',
-    fontWeight: '600',
+    fontFamily: sansStack,
+    fontSize: '14px',
+    fontWeight: '700',
     color: colors.info,
-    marginBottom: '12px',
+    margin: '0 0 8px',
   },
   infoText: {
+    fontFamily: sansStack,
     fontSize: '14px',
     lineHeight: '22px',
-    color: colors.info,
-    margin: '4px 0',
+    color: colors.text,
+    margin: '0',
   },
-  // Success boxes
+
+  // Success (green wash)
   successBox: {
     backgroundColor: colors.successBg,
-    border: `1px solid ${colors.success}`,
-    borderRadius: '8px',
-    padding: '20px',
+    borderRadius: '10px',
+    padding: '18px 20px',
     margin: '24px 0',
   },
   successTitle: {
-    fontSize: '16px',
-    fontWeight: '600',
+    fontFamily: sansStack,
+    fontSize: '14px',
+    fontWeight: '700',
     color: colors.success,
-    marginBottom: '12px',
+    margin: '0 0 8px',
   },
   successText: {
+    fontFamily: sansStack,
     fontSize: '14px',
     lineHeight: '22px',
-    color: colors.success,
-    margin: '4px 0',
+    color: colors.text,
+    margin: '0',
   },
-  // Warning boxes
+
+  // Warning (gold wash — on-brand)
   warningBox: {
     backgroundColor: colors.warningBg,
-    border: `1px solid ${colors.warning}`,
-    borderRadius: '8px',
-    padding: '20px',
+    borderRadius: '10px',
+    padding: '18px 20px',
     margin: '24px 0',
   },
   warningTitle: {
-    fontSize: '16px',
-    fontWeight: '600',
+    fontFamily: sansStack,
+    fontSize: '14px',
+    fontWeight: '700',
     color: colors.warning,
-    marginBottom: '12px',
+    margin: '0 0 8px',
   },
   warningText: {
+    fontFamily: sansStack,
     fontSize: '14px',
     lineHeight: '22px',
-    color: '#78350f', // Darker yellow for readability
-    margin: '4px 0',
+    color: colors.text,
+    margin: '0',
   },
-  // Error boxes
+
+  // Error (red wash)
   errorBox: {
     backgroundColor: colors.errorBg,
-    border: `1px solid ${colors.error}`,
-    borderRadius: '8px',
-    padding: '20px',
+    borderRadius: '10px',
+    padding: '18px 20px',
     margin: '24px 0',
   },
   errorTitle: {
-    fontSize: '16px',
-    fontWeight: '600',
-    color: '#991b1b', // Darker red for readability
-    marginBottom: '12px',
+    fontFamily: sansStack,
+    fontSize: '14px',
+    fontWeight: '700',
+    color: colors.error,
+    margin: '0 0 8px',
   },
   errorText: {
+    fontFamily: sansStack,
     fontSize: '14px',
     lineHeight: '22px',
-    color: '#b91c1c', // Darker red for readability
-    margin: '4px 0',
+    color: colors.text,
+    margin: '0',
   },
-  // Neutral boxes
+
+  // Neutral (warm canvas tint)
   neutralBox: {
-    backgroundColor: '#f3f4f6',
-    border: `1px solid ${colors.border}`,
-    borderRadius: '8px',
-    padding: '20px',
+    backgroundColor: '#FAFAF7',
+    borderRadius: '10px',
+    padding: '18px 20px',
     margin: '24px 0',
   },
   neutralTitle: {
-    fontSize: '16px',
-    fontWeight: '600',
+    fontFamily: sansStack,
+    fontSize: '14px',
+    fontWeight: '700',
     color: colors.text,
-    marginBottom: '12px',
+    margin: '0 0 8px',
   },
   neutralText: {
+    fontFamily: sansStack,
     fontSize: '14px',
     lineHeight: '22px',
     color: colors.textSecondary,
-    margin: '4px 0',
+    margin: '0',
   },
-  // Quote box for replies
+
+  // Quote box for replies — refined with warm hairline
   quoteBox: {
-    backgroundColor: '#f3f4f6', // Light gray background
-    borderLeft: '4px solid #e5e7eb', // Subtle left border
+    backgroundColor: '#FAFAF7',
+    borderLeft: `3px solid ${colors.border}`,
     padding: '12px 16px',
     margin: '16px 0',
-    borderRadius: '4px',
+    borderRadius: '6px',
   },
   quoteText: {
+    fontFamily: sansStack,
     fontSize: '15px',
     lineHeight: '24px',
-    color: '#4b5563', // Darker gray for quote text
+    color: colors.textSecondary,
     fontStyle: 'italic',
   },
 };
-

@@ -272,26 +272,26 @@ export const branding = {
 
   // Email Configuration
   email: {
-    // Email-specific colors (vault theme)
+    // Email-specific colors (gold-anchored fintech palette)
     colors: {
-      primary: '#6366f1',              // Primary button color (indigo)
-      primaryHover: '#4f46e5',         // Primary button hover
-      secondary: '#f3f4f6',            // Secondary button background
-      secondaryText: '#1f2937',        // Secondary button text
-      success: '#10b981',              // Success states (green)
-      successBg: '#ecfdf5',            // Success background
-      warning: '#f59e0b',              // Warning states (amber)
-      warningBg: '#fef3c7',            // Warning background
-      error: '#ef4444',                // Error states (red)
-      errorBg: '#fef2f2',              // Error background
-      info: '#3b82f6',                 // Info states (blue)
-      infoBg: '#eff6ff',               // Info background
-      text: '#111827',                 // Primary text color
-      textSecondary: '#6b7280',        // Secondary text color
-      textMuted: '#9ca3af',            // Muted text color
-      border: '#e5e7eb',               // Border color
-      background: '#ffffff',           // Email background
-      accent: '#f59e0b',               // Gold accent
+      primary: '#D4A017',              // Tano gold — CTAs, accents, hairline
+      primaryHover: '#A6790E',         // Deeper gold for hover/links on light
+      secondary: '#F6F5F1',            // Warm neutral for secondary buttons
+      secondaryText: '#2A2E36',        // Ink for secondary button text
+      success: '#0F8A5F',              // Calmer institutional green
+      successBg: '#F0F8F4',            // Subtle green wash
+      warning: '#A6790E',              // Gold for warnings (on-brand)
+      warningBg: '#FBF5E5',            // Gold wash
+      error: '#B42318',                // Deeper, less alarming red
+      errorBg: '#FEF3F2',              // Subtle red wash
+      info: '#1849A9',                 // Deeper, premium blue
+      infoBg: '#EFF4FB',               // Subtle blue wash
+      text: '#0F1115',                 // Ink 900 — headlines
+      textSecondary: '#5C6371',        // Ink 500 — body secondary
+      textMuted: '#A7ADB8',            // Ink 300 — footer / disclaimers
+      border: '#ECE9E0',               // Warm hairline divider
+      background: '#FFFFFF',           // Card surface
+      accent: '#D4A017',               // Same as primary (back-compat)
     },
     // Email URLs
     urls: {

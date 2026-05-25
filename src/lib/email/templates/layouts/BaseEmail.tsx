@@ -1,6 +1,7 @@
 /**
  * Base Email Layout
- * Responsive email template wrapper with consistent styling
+ * Premium fintech wrapper — warm canvas, white card, gold hairline,
+ * responsive at <=600px.
  */
 
 import {
@@ -21,6 +22,15 @@ interface BaseEmailProps {
   showFooter?: boolean;
 }
 
+const responsiveCss = `
+  @media only screen and (max-width: 600px) {
+    .tw-card { width: 100% !important; border-radius: 0 !important; }
+    .tw-content { padding-left: 24px !important; padding-right: 24px !important; }
+    .tw-h1 { font-size: 22px !important; line-height: 30px !important; }
+    .tw-cta a { display: block !important; width: 100% !important; box-sizing: border-box !important; }
+  }
+`;
+
 export function BaseEmail({
   preview,
   children,
@@ -29,12 +39,18 @@ export function BaseEmail({
 }: BaseEmailProps) {
   return (
     <Html>
-      <Head />
+      <Head>
+        <meta name="color-scheme" content="light only" />
+        <meta name="supported-color-schemes" content="light only" />
+        <style>{responsiveCss}</style>
+      </Head>
       <Preview>{preview}</Preview>
       <Body style={body}>
-        <Container style={container}>
+        <Container className="tw-card" style={container}>
           {showHeader && <EmailHeader />}
-          <div style={content}>{children}</div>
+          <div className="tw-content" style={content}>
+            {children}
+          </div>
           {showFooter && <EmailFooter />}
         </Container>
       </Body>
@@ -43,11 +59,11 @@ export function BaseEmail({
 }
 
 const body = {
-  backgroundColor: '#f9fafb', // Light gray background for email clients
+  backgroundColor: '#F6F5F1', // Warm neutral canvas
   fontFamily:
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   margin: 0,
-  padding: 0,
+  padding: '32px 16px',
 };
 
 const container = {
@@ -55,9 +71,12 @@ const container = {
   margin: '0 auto',
   padding: '0',
   maxWidth: '600px',
-  width: '100%',
+  width: '600px',
+  borderRadius: '14px',
+  overflow: 'hidden',
+  boxShadow: '0 1px 2px rgba(15, 17, 21, 0.04)',
 };
 
 const content = {
-  padding: '0 40px 40px',
+  padding: '0 40px 8px',
 };

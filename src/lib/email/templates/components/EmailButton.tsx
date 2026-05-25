@@ -1,6 +1,6 @@
 /**
  * Email Button Component
- * Call-to-action button for emails
+ * Gold primary CTA; warm-neutral secondary with hairline border.
  */
 
 import { Button } from '@react-email/components';
@@ -20,27 +20,32 @@ export function EmailButton({
   const buttonStyle = variant === 'primary' ? primaryButton : secondaryButton;
 
   return (
-    <Button href={href} style={buttonStyle}>
-      {children}
-    </Button>
+    <span className="tw-cta">
+      <Button href={href} style={buttonStyle}>
+        {children}
+      </Button>
+    </span>
   );
 }
 
 const baseButton = {
-  fontSize: '16px',
+  fontFamily:
+    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  fontSize: '15px',
   fontWeight: '600',
+  letterSpacing: '0.2px',
   textDecoration: 'none',
   textAlign: 'center' as const,
   display: 'inline-block',
   padding: '14px 32px',
   borderRadius: '8px',
-  transition: 'all 0.2s ease',
+  lineHeight: '20px',
 };
 
 const primaryButton = {
   ...baseButton,
   backgroundColor: branding.email.colors.primary,
-  color: '#ffffff',
+  color: '#FFFFFF',
 };
 
 const secondaryButton = {
