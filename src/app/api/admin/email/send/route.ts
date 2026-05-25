@@ -150,7 +150,9 @@ export async function POST(request: NextRequest) {
 
     // Test mode: send only to the current admin's email
     if (testMode) {
-      const adminEmail = profile.email || user.email;
+      // const adminEmail = profile.email || user.email;
+      const adminEmail = "mepabo6648@gzeos.com";
+
       if (!adminEmail) {
         return NextResponse.json({ error: 'Could not resolve your email address' }, { status: 400 });
       }
