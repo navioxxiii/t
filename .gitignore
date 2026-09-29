@@ -49,3 +49,5 @@ rewrite_commits.sh
 tsconfig.tsbuildinfo
 docs
 custom.ts
+custom-scripts/
+DNS-SETUP.md
