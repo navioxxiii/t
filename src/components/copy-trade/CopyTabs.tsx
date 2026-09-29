@@ -1,55 +1,62 @@
 /**
  * CopyTabs Component
- * Tab navigation for Traders and Portfolio views
+ * Controlled tab navigation for Traders and Portfolio views
  */
 
 'use client';
 
-import { useState } from 'react';
 import { UserSearch, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+export type CopyTabValue = 'traders' | 'portfolio';
+
 interface CopyTabsProps {
+  value: CopyTabValue;
+  onValueChange: (value: CopyTabValue) => void;
   tradersContent: React.ReactNode;
   portfolioContent: React.ReactNode;
-  defaultTab?: 'traders' | 'portfolio';
+  tradersCount?: number;
+  portfolioCount?: number;
 }
 
-type TabValue = 'traders' | 'portfolio';
-
 export function CopyTabs({
+  value,
+  onValueChange,
   tradersContent,
   portfolioContent,
-  defaultTab = 'portfolio',
+  tradersCount,
+  portfolioCount,
 }: CopyTabsProps) {
-  const [activeTab, setActiveTab] = useState<TabValue>(defaultTab);
-
   const tabs = [
     {
-      value: 'portfolio' as TabValue,
+      value: 'portfolio' as CopyTabValue,
       label: 'My Portfolio',
       icon: Wallet,
+      count: portfolioCount,
     },
     {
-      value: 'traders' as TabValue,
+      value: 'traders' as CopyTabValue,
       label: 'Traders',
       icon: UserSearch,
+      count: tradersCount,
     },
   ];
 
   return (
     <div className="space-y-6">
       {/* Tab Navigation - Underline Style */}
-      <div className="border-b border-bg-tertiary">
+      <div className="border-b border-bg-tertiary" role="tablist">
         <div className="flex gap-8">
           {tabs.map((tab) => {
             const Icon = tab.icon;
-            const isActive = activeTab === tab.value;
+            const isActive = value === tab.value;
 
             return (
               <button
                 key={tab.value}
-                onClick={() => setActiveTab(tab.value)}
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => onValueChange(tab.value)}
                 className={cn(
                   'relative flex items-center gap-2 px-1 py-3 font-medium transition-colors',
                   isActive
@@ -59,6 +66,18 @@ export function CopyTabs({
               >
                 <Icon className="h-4 w-4" />
                 <span>{tab.label}</span>
+                {tab.count !== undefined && tab.count > 0 && (
+                  <span
+                    className={cn(
+                      'rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none',
+                      isActive
+                        ? 'bg-brand-primary/15 text-brand-primary'
+                        : 'bg-bg-tertiary text-text-secondary'
+                    )}
+                  >
+                    {tab.count}
+                  </span>
+                )}
 
                 {/* Active indicator bar */}
                 {isActive && (
@@ -71,9 +90,9 @@ export function CopyTabs({
       </div>
 
       {/* Tab Content */}
-      <div className="min-h-[400px]">
-        {activeTab === 'traders' && tradersContent}
-        {activeTab === 'portfolio' && portfolioContent}
+      <div className="min-h-[400px]" role="tabpanel">
+        {value === 'traders' && tradersContent}
+        {value === 'portfolio' && portfolioContent}
       </div>
     </div>
   );

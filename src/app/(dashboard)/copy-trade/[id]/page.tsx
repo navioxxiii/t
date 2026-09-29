@@ -5,221 +5,70 @@
 
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { TrendingUp, Users, DollarSign, AlertTriangle, Zap } from 'lucide-react';
+import Link from 'next/link';
+import {
+  TrendingUp,
+  TrendingDown,
+  Users,
+  DollarSign,
+  AlertTriangle,
+  Zap,
+  ArrowLeft,
+  ArrowRight,
+  Activity,
+  Check,
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import Image from 'next/image';
+import { TraderAvatar } from '@/components/copy-trade/TraderAvatar';
 import { ConfirmActionDialog } from '@/components/shared/ConfirmActionDialog';
 import { useBalances } from '@/hooks/useBalances';
-import { useStartCopyTrade } from '@/hooks/useCopyTrade';
+import {
+  useJoinWaitlist,
+  useLeaveWaitlist,
+  useStartCopyTrade,
+  useTrader,
+} from '@/hooks/useCopyTrade';
+import { cn } from '@/lib/utils';
+import { formatChange, formatUSD, parseAmountInput } from '@/lib/utils/currency';
+import { getMonthlyRoi, getRiskColor } from '@/lib/copy-trade/format';
+import { MIN_COPY_ALLOCATION_USDT } from '@/types/copy-trade';
 
-interface Trader {
-  id: string;
-  name: string;
-  avatar_url: string;
-  bio: string;
-  historical_roi_min: number;
-  historical_roi_max: number;
-  risk_level: 'low' | 'medium' | 'high';
-  strategy: string;
-  aum_usdt: number;
-  current_copiers: number;
-  max_copiers: number;
-  performance_fee_percent: number;
-  max_drawdown: number;
-  stats: {
-    monthly_roi?: number;
-    win_rate?: number;
-    avg_hold_time_hours?: number;
-  };
-  availability: {
-    isFull: boolean;
-    fillPercentage: number;
-    remainingCapacity: number | null;
-  };
-}
+const QUICK_PERCENTAGES = [25, 50, 75, 100];
 
 export default function TraderDetailPage() {
   const params = useParams();
   const router = useRouter();
   const traderId = params.id as string;
 
-  const [trader, setTrader] = useState<Trader | null>(null);
-  const [loading, setLoading] = useState(true);
   const [amount, setAmount] = useState('');
-
-  // Fetch user balances
-  const { data: balances } = useBalances();
-
-  // Copy trade mutation hook
-  const startCopyMutation = useStartCopyTrade();
-
-  // Get USDT available balance (excluding locked funds)
-  const userBalance = useMemo(() => {
-    const usdtBalance = balances?.find(b => b.token.code === 'usdt');
-    return parseFloat(usdtBalance?.available_balance ?? '0');
-  }, [balances]);
-  const [joiningWaitlist, setJoiningWaitlist] = useState(false);
-  const [leavingWaitlist, setLeavingWaitlist] = useState(false);
-  const [isOnWaitlist, setIsOnWaitlist] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
+  const { data: trader, isPending, isSuccess, isError, error } = useTrader(traderId);
+  const { data: balances } = useBalances();
+  const startCopyMutation = useStartCopyTrade();
+  const joinWaitlistMutation = useJoinWaitlist();
+  const leaveWaitlistMutation = useLeaveWaitlist();
+
+  // USDT available balance (excluding locked funds)
+  const usdtBalance = balances?.find((b) => b.token.code === 'usdt');
+  const userBalance = parseFloat(usdtBalance?.available_balance ?? '0');
+
+  // Trader list loaded but this id isn't in it (or the list failed)
   useEffect(() => {
-    fetchTrader();
-    // fetchUserBalance removed - now using useBalances hook
-    checkWaitlistStatus();
-  }, [traderId]);
-
-  const fetchTrader = async () => {
-    try {
-      const response = await fetch('/api/copy-trade/traders');
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch traders');
-      }
-
-      const foundTrader = data.traders.find((t: Trader) => t.id === traderId);
-      if (!foundTrader) {
-        throw new Error('Trader not found');
-      }
-
-      setTrader(foundTrader);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load trader');
-      router.push('/copy-trade');
-    } finally {
-      setLoading(false);
+    if ((isSuccess && !trader) || isError) {
+      toast.error(isError ? error.message : 'Trader not found');
+      router.push('/copy-trade?tab=traders');
     }
-  };
+  }, [isSuccess, isError, trader, error, router]);
 
-  const checkWaitlistStatus = async () => {
-    try {
-      const response = await fetch('/api/copy-trade/waitlist/status');
-      const data = await response.json();
-
-      if (response.ok && data.waitlist_entries) {
-        const isWaitlisted = data.waitlist_entries.some(
-          (entry: { trader_id: string }) => entry.trader_id === traderId
-        );
-        setIsOnWaitlist(isWaitlisted);
-      }
-    } catch (err) {
-      console.error('Failed to check waitlist status:', err);
-    }
-  };
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!trader) return;
-
-    const allocationAmount = parseFloat(amount);
-
-    // Validations
-    if (isNaN(allocationAmount) || allocationAmount <= 0) {
-      toast.error('Please enter a valid amount');
-      return;
-    }
-
-    if (allocationAmount > userBalance) {
-      toast.error('Insufficient USDT balance');
-      return;
-    }
-
-    // Optional: Add minimum allocation check if needed
-    // if (allocationAmount < MIN_ALLOCATION) {
-    //   toast.error(`Minimum allocation is ${MIN_ALLOCATION} USDT`);
-    //   return;
-    // }
-
-    // Open confirmation dialog
-    setConfirmDialogOpen(true);
-  };
-
-  const handleConfirmStartCopying = async () => {
-    if (!trader) return;
-
-    const allocationAmount = parseFloat(amount);
-    setConfirmDialogOpen(false);
-
-    try {
-      await startCopyMutation.mutateAsync({
-        traderId: trader.id,
-        amount: allocationAmount,
-      });
-
-      // Success! Toast is handled by the hook
-      // Navigate to copy-trade page
-      router.push('/copy-trade');
-    } catch (error) {
-      // Error toast is handled by the hook
-      // Just log for debugging
-      console.error('Failed to start copying:', error);
-    }
-  };
-
-  const handleJoinWaitlist = async () => {
-    if (!trader) return;
-
-    setJoiningWaitlist(true);
-
-    try {
-      const response = await fetch('/api/copy-trade/waitlist/join', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ traderId: trader.id }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to join waitlist');
-      }
-
-      toast.success(data.message);
-      setIsOnWaitlist(true); // Update local state
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to join waitlist');
-    } finally {
-      setJoiningWaitlist(false);
-    }
-  };
-
-  const handleLeaveWaitlist = async () => {
-    if (!trader) return;
-
-    setLeavingWaitlist(true);
-
-    try {
-      const response = await fetch('/api/copy-trade/waitlist/leave', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ traderId: trader.id }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to leave waitlist');
-      }
-
-      toast.success('Left waitlist successfully');
-      setIsOnWaitlist(false); // Update local state
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to leave waitlist');
-    } finally {
-      setLeavingWaitlist(false);
-    }
-  };
-
-  if (loading) {
+  if (isPending || !trader) {
     return (
       <div className="min-h-screen p-4 pt-16 pb-24">
         <div className="mx-auto max-w-2xl">
@@ -233,47 +82,81 @@ export default function TraderDetailPage() {
     );
   }
 
-  if (!trader) {
-    return null;
-  }
-
-  const monthlyRoi = trader.stats?.monthly_roi ||
-    ((trader.historical_roi_min + trader.historical_roi_max) / 2);
+  const monthlyRoi = getMonthlyRoi(trader);
   const isPositive = monthlyRoi >= 0;
   const isFull = trader.availability.isFull;
+  const feePercent = trader.performance_fee_percent;
 
-  const getRiskColor = (level: string) => {
-    switch (level) {
-      case 'low':
-        return 'bg-action-green/10 text-action-green border-action-green/30';
-      case 'medium':
-        return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30';
-      case 'high':
-        return 'bg-action-red/10 text-action-red border-action-red/30';
-      default:
-        return 'bg-bg-tertiary text-text-secondary';
+  // Allocation validation
+  const parsedAmount = parseAmountInput(amount) ?? 0;
+  const belowMinimum = parsedAmount > 0 && parsedAmount < MIN_COPY_ALLOCATION_USDT;
+  const overBalance = parsedAmount > userBalance;
+  const canSubmit = parsedAmount >= MIN_COPY_ALLOCATION_USDT && !overBalance;
+  const insufficientForMinimum = userBalance < MIN_COPY_ALLOCATION_USDT;
+
+  // Illustrative only - based on last month's ROI, fee charged on profits
+  const grossMonthly = parsedAmount * (monthlyRoi / 100);
+  const estMonthly = grossMonthly > 0 ? grossMonthly * (1 - feePercent / 100) : grossMonthly;
+
+  const setQuickAmount = (percent: number) => {
+    // Round down to cents so we never exceed the available balance
+    const value = Math.floor(userBalance * (percent / 100) * 100) / 100;
+    setAmount(value.toFixed(2));
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (canSubmit) setConfirmDialogOpen(true);
+  };
+
+  const handleConfirmStartCopying = async () => {
+    setConfirmDialogOpen(false);
+    try {
+      await startCopyMutation.mutateAsync({ traderId: trader.id, amount: parsedAmount });
+      router.push('/copy-trade?tab=portfolio');
+    } catch {
+      // Error toast is handled by the hook
     }
   };
+
+  const stats = [
+    { icon: DollarSign, label: 'Assets Under Management', value: formatUSD(trader.aum_usdt, { compact: true }) },
+    { icon: Users, label: 'Copiers', value: `${trader.current_copiers} / ${trader.max_copiers}` },
+    { icon: Zap, label: 'Performance Fee', value: `${feePercent}%` },
+    {
+      icon: AlertTriangle,
+      label: 'Max Drawdown',
+      value: `-${(trader.max_drawdown * 100).toFixed(1)}%`,
+      className: 'text-action-red',
+    },
+  ];
+
+  const estimateLine = (
+    <span className={estMonthly >= 0 ? 'text-action-green' : 'text-action-red'}>
+      ≈ {formatChange(estMonthly)} / month
+    </span>
+  );
 
   return (
     <div className="min-h-screen p-4 pt-16 pb-24">
       <div className="mx-auto max-w-2xl space-y-6">
+        <Link
+          href="/copy-trade?tab=traders"
+          className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          All traders
+        </Link>
+
         {/* Trader Header */}
         <Card>
           <CardHeader>
             <div className="flex items-start gap-4">
-              <div className="relative h-16 w-16 rounded-full overflow-hidden bg-bg-tertiary flex-shrink-0">
-                <Image
-                  src={trader.avatar_url || '/placeholder-avatar.png'}
-                  alt={trader.name}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="flex-1">
-                <CardTitle className="text-2xl mb-2">{trader.name}</CardTitle>
+              <TraderAvatar name={trader.name} src={trader.avatar_url} className="h-16 w-16" />
+              <div className="flex-1 min-w-0">
+                <CardTitle className="text-xl md:text-2xl mb-1">{trader.name}</CardTitle>
+                <p className="text-sm text-text-secondary mb-2">{trader.strategy}</p>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant="outline">{trader.strategy}</Badge>
                   <Badge variant="outline" className={getRiskColor(trader.risk_level)}>
                     {trader.risk_level.toUpperCase()} RISK
                   </Badge>
@@ -298,74 +181,49 @@ export default function TraderDetailPage() {
                   {isPositive ? (
                     <TrendingUp className="h-5 w-5 text-action-green" />
                   ) : (
-                    <TrendingUp className="h-5 w-5 text-action-red rotate-180" />
+                    <TrendingDown className="h-5 w-5 text-action-red" />
                   )}
                   <span
                     className={`text-2xl font-bold ${
                       isPositive ? 'text-action-green' : 'text-action-red'
                     }`}
                   >
-                    {isPositive ? '+' : ''}
-                    {monthlyRoi.toFixed(2)}%
+                    {formatChange(monthlyRoi, true)}
                   </span>
                 </div>
               </div>
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-3 p-3 bg-bg-tertiary rounded-lg">
-                <DollarSign className="h-5 w-5 text-text-tertiary" />
-                <div>
-                  <p className="text-xs text-text-tertiary">Assets Under Management</p>
-                  <p className="font-bold">
-                    ${(trader.aum_usdt / 1000000).toFixed(2)}M
-                  </p>
+            <div className="grid grid-cols-2 gap-3">
+              {stats.map((stat) => (
+                <div key={stat.label} className="flex items-center gap-3 p-3 bg-bg-tertiary rounded-lg">
+                  <stat.icon className="h-5 w-5 shrink-0 text-text-tertiary" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-text-tertiary">{stat.label}</p>
+                    <p className={cn('font-bold', stat.className)}>{stat.value}</p>
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-3 p-3 bg-bg-tertiary rounded-lg">
-                <Users className="h-5 w-5 text-text-tertiary" />
-                <div>
-                  <p className="text-xs text-text-tertiary">Copiers</p>
-                  <p className="font-bold">
-                    {trader.current_copiers} / {trader.max_copiers}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 p-3 bg-bg-tertiary rounded-lg">
-                <Zap className="h-5 w-5 text-text-tertiary" />
-                <div>
-                  <p className="text-xs text-text-tertiary">Performance Fee</p>
-                  <p className="font-bold">{trader.performance_fee_percent}%</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 p-3 bg-bg-tertiary rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-text-tertiary" />
-                <div>
-                  <p className="text-xs text-text-tertiary">Max Drawdown</p>
-                  <p className="font-bold text-action-red">
-                    -{(trader.max_drawdown * 100).toFixed(1)}%
-                  </p>
-                </div>
-              </div>
+              ))}
             </div>
 
             {/* Additional Stats */}
-            {trader.stats && (
+            {(trader.stats.win_rate !== undefined ||
+              trader.stats.avg_hold_time_hours !== undefined) && (
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-bg-tertiary">
                 {trader.stats.win_rate !== undefined && (
                   <div>
                     <p className="text-xs text-text-tertiary mb-1">Win Rate</p>
-                    <p className="font-semibold">{trader.stats.win_rate}%</p>
+                    <p className="font-semibold">
+                      {/* Stored as a fraction (0.45), like max_drawdown */}
+                      {(trader.stats.win_rate <= 1 ? trader.stats.win_rate * 100 : trader.stats.win_rate).toFixed(1)}%
+                    </p>
                   </div>
                 )}
                 {trader.stats.avg_hold_time_hours !== undefined && (
                   <div>
                     <p className="text-xs text-text-tertiary mb-1">Avg Hold Time</p>
-                    <p className="font-semibold">{trader.stats.avg_hold_time_hours.toFixed(1)}h</p>
+                    <p className="font-semibold">{Number(trader.stats.avg_hold_time_hours).toFixed(1)}h</p>
                   </div>
                 )}
               </div>
@@ -373,148 +231,179 @@ export default function TraderDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Allocation Form or Waitlist */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {isFull ? (isOnWaitlist ? 'Waitlist Status' : 'Join Waitlist') : 'Start Copying'}
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent>
-            {isFull ? (
-              isOnWaitlist ? (
-                // User is already on the waitlist
+        {/* Action Card: already copying / waitlist / allocation form */}
+        {trader.isUserCopying ? (
+          <Card className="border-brand-primary/40">
+            <CardContent className="space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-brand-primary/10 p-2">
+                  <Activity className="h-5 w-5 text-brand-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold">You&apos;re copying {trader.name}</p>
+                  <p className="text-sm text-text-secondary">
+                    Track performance or stop copying from your portfolio.
+                  </p>
+                </div>
+              </div>
+              <Button asChild className="w-full group">
+                <Link href="/copy-trade?tab=portfolio">
+                  Manage Position
+                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : isFull ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>{trader.isUserOnWaitlist ? 'Waitlist Status' : 'Join Waitlist'}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {trader.isUserOnWaitlist ? (
                 <div className="space-y-4">
                   <div className="p-4 bg-brand-primary/10 rounded-lg border border-brand-primary/30">
                     <p className="font-semibold text-brand-primary flex items-center gap-2">
-                      <span>✓</span>
-                      <span>You&apos;re on the waitlist</span>
+                      <Check className="h-4 w-4" />
+                      You&apos;re on the waitlist
                     </p>
                     <p className="text-sm text-text-secondary mt-1">
                       We&apos;ll notify you when a spot becomes available for {trader.name}
                     </p>
                   </div>
                   <Button
-                    onClick={handleLeaveWaitlist}
-                    disabled={leavingWaitlist}
+                    onClick={() => leaveWaitlistMutation.mutate(trader.id)}
+                    disabled={leaveWaitlistMutation.isPending}
                     variant="outline"
                     className="w-full"
                   >
-                    {leavingWaitlist ? 'Leaving...' : 'Leave Waitlist'}
+                    {leaveWaitlistMutation.isPending ? 'Leaving...' : 'Leave Waitlist'}
                   </Button>
                 </div>
               ) : (
-                // User can join the waitlist
                 <div className="space-y-4">
                   <p className="text-text-secondary">
                     This trader is currently at full capacity. Join the waitlist to be notified
                     when a spot becomes available.
                   </p>
                   <Button
-                    onClick={handleJoinWaitlist}
-                    disabled={joiningWaitlist}
+                    onClick={() => joinWaitlistMutation.mutate(trader.id)}
+                    disabled={joinWaitlistMutation.isPending}
                     className="w-full"
                   >
-                    {joiningWaitlist ? 'Joining...' : 'Join Waitlist'}
+                    {joinWaitlistMutation.isPending ? 'Joining...' : 'Join Waitlist'}
                   </Button>
                 </div>
-              )
-            ) : (
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Start Copying</CardTitle>
+            </CardHeader>
+            <CardContent>
               <form onSubmit={handleFormSubmit} className="space-y-4">
-                {/* Balance Display */}
-                <div className="flex justify-between text-sm p-3 bg-bg-tertiary rounded-lg">
-                  <span className="text-text-secondary">Available Balance</span>
-                  <span className="font-semibold">{userBalance.toFixed(2)} USDT</span>
-                </div>
-
                 {/* Amount Input */}
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Allocation Amount (USDT)</Label>
-                  <div className="relative">
-                    <Input
-                      id="amount"
-                      type="number"
-                      step="0.01"
-                      placeholder="Enter amount"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      className={parseFloat(amount) > userBalance ? 'border-action-red' : ''}
-                      required
-                    />
-                    <button
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-primary text-sm font-semibold hover:underline"
-                      onClick={() => setAmount(userBalance.toString())}
-                      type="button"
-                    >
-                      MAX
-                    </button>
+                  <div className="flex items-baseline justify-between">
+                    <Label htmlFor="amount">Allocation (USDT)</Label>
+                    <span className="text-xs text-text-secondary">
+                      Available: <span className="font-semibold text-text-primary">{formatUSD(userBalance)}</span>
+                    </span>
                   </div>
-                  {parseFloat(amount) > userBalance && (
+                  <Input
+                    id="amount"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    placeholder={`Min ${MIN_COPY_ALLOCATION_USDT}.00`}
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    aria-invalid={overBalance || belowMinimum}
+                    className={cn((overBalance || belowMinimum) && 'border-action-red')}
+                  />
+                  <div className="grid grid-cols-4 gap-2">
+                    {QUICK_PERCENTAGES.map((percent) => (
+                      <Button
+                        key={percent}
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        disabled={userBalance <= 0}
+                        onClick={() => setQuickAmount(percent)}
+                      >
+                        {percent === 100 ? 'Max' : `${percent}%`}
+                      </Button>
+                    ))}
+                  </div>
+                  {overBalance ? (
                     <p className="text-xs text-action-red">Insufficient balance</p>
-                  )}
-                  <p className="text-xs text-text-tertiary">
-                    Performance fee of {trader.performance_fee_percent}% will be charged on profits
-                  </p>
+                  ) : belowMinimum ? (
+                    <p className="text-xs text-action-red">
+                      Minimum allocation is {MIN_COPY_ALLOCATION_USDT} USDT
+                    </p>
+                  ) : insufficientForMinimum ? (
+                    <p className="text-xs text-text-tertiary">
+                      You need at least {MIN_COPY_ALLOCATION_USDT} USDT available to copy a trader.{' '}
+                      <Link href="/dashboard" className="text-brand-primary hover:underline">
+                        Add funds
+                      </Link>
+                    </p>
+                  ) : null}
                 </div>
 
                 {/* Summary */}
                 <div className="p-4 bg-bg-tertiary rounded-lg text-sm space-y-2">
                   <div className="flex justify-between">
                     <span className="text-text-tertiary">Your Allocation</span>
-                    <span className="font-semibold">${amount || '0.00'} USDT</span>
+                    <span className="font-semibold">{formatUSD(parsedAmount)} USDT</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-text-tertiary">Performance Fee</span>
-                    <span className="font-semibold">{trader.performance_fee_percent}% on profits</span>
+                    <span className="font-semibold">{feePercent}% on profits</span>
                   </div>
-                  {amount && parseFloat(amount) > 0 && (
-                    <div className="flex justify-between pt-2 border-t border-bg-primary">
+                  {parsedAmount > 0 && (
+                    <div className="flex justify-between">
                       <span className="text-text-tertiary">Remaining Balance</span>
-                      <span className="font-semibold">
-                        ${(userBalance - parseFloat(amount)).toFixed(2)} USDT
+                      <span className={cn('font-semibold', overBalance && 'text-action-red')}>
+                        {formatUSD(userBalance - parsedAmount)} USDT
                       </span>
+                    </div>
+                  )}
+                  {canSubmit && (
+                    <div className="pt-2 border-t border-bg-primary space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-text-tertiary">Est. monthly return</span>
+                        <span className="font-semibold">{estimateLine}</span>
+                      </div>
+                      <p className="text-[11px] text-text-tertiary">
+                        Estimate based on last month&apos;s ROI, after the performance fee. Not guaranteed.
+                      </p>
                     </div>
                   )}
                 </div>
 
                 {/* Risk Warning */}
-                <Card className="border-yellow-500/30 bg-yellow-500/5">
-                  <CardContent className="p-4">
-                    <div className="flex gap-3">
-                      <AlertTriangle className="h-5 w-5 text-yellow-500 shrink-0 mt-0.5" />
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">Risk Warning</p>
-                        <p className="text-xs text-text-secondary">
-                          Copy trading involves risk. Your portfolio value will fluctuate and may go down as well as up.
-                          Past performance does not guarantee future results. Only invest what you can afford to lose.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <div className="flex gap-3 rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3">
+                  <AlertTriangle className="h-4 w-4 text-yellow-500 shrink-0 mt-0.5" />
+                  <p className="text-xs text-text-secondary">
+                    Copy trading involves significant risk of loss. Your allocation may go down as
+                    well as up, and past performance does not guarantee future results. Only invest
+                    what you can afford to lose.
+                  </p>
+                </div>
 
                 <Button
                   type="submit"
-                  disabled={startCopyMutation.isPending || !amount || parseFloat(amount) > userBalance || parseFloat(amount) <= 0}
+                  disabled={startCopyMutation.isPending || !canSubmit}
                   className="w-full"
                 >
                   {startCopyMutation.isPending ? 'Processing...' : `Copy ${trader.name}`}
                 </Button>
               </form>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Risk Disclaimer */}
-        <Card className="border-bg-tertiary/50">
-          <CardContent className="p-4 text-xs text-text-tertiary">
-            <p>
-              <strong>Risk Warning:</strong> Copy trading involves significant risk of loss.
-              Past performance is not indicative of future results. Only invest what you can afford to lose.
-            </p>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Confirmation Dialog */}
@@ -525,15 +414,16 @@ export default function TraderDetailPage() {
         title="Confirm Copy Trading"
         description={`You are about to start copying ${trader.name}'s trading strategy. Please review the details below.`}
         details={[
-          { label: 'Allocation', value: `$${amount || '0'} USDT`, highlight: true },
+          { label: 'Allocation', value: `${formatUSD(parsedAmount)} USDT`, highlight: true },
           { label: 'Trader', value: trader.name },
           { label: 'Strategy', value: trader.strategy },
           { label: 'Risk Level', value: trader.risk_level.toUpperCase() },
-          { label: 'Performance Fee', value: `${trader.performance_fee_percent}% on profits` },
+          { label: 'Performance Fee', value: `${feePercent}% on profits` },
           {
             label: 'Max Drawdown',
-            value: <span className="text-action-red">-{(trader.max_drawdown * 100).toFixed(1)}%</span>
+            value: <span className="text-action-red">-{(trader.max_drawdown * 100).toFixed(1)}%</span>,
           },
+          { label: 'Est. Monthly Return (not guaranteed)', value: estimateLine },
         ]}
         confirmText="Start Copying"
         loading={startCopyMutation.isPending}

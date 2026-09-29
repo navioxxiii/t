@@ -5,245 +5,200 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
-import { UsersRound, TrendingUp, DollarSign } from 'lucide-react';
+import { Suspense, useEffect, useReducer } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { UsersRound, Wallet, TrendingUp, History, Activity } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { CopyTabs } from '@/components/copy-trade/CopyTabs';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { CopyTabs, type CopyTabValue } from '@/components/copy-trade/CopyTabs';
 import { TradersGrid } from '@/components/copy-trade/TradersGrid';
 import { CopyPositionCard } from '@/components/copy-trade/CopyPositionCard';
+import { useCopyPositions, useTraders } from '@/hooks/useCopyTrade';
+import { cn } from '@/lib/utils';
+import { formatChange, formatUSD } from '@/lib/utils/currency';
+import type { PositionsData } from '@/types/copy-trade';
 
-interface Trader {
-  id: string;
-  name: string;
-  avatar_url: string;
-  bio: string;
-  historical_roi_min: number;
-  historical_roi_max: number;
-  risk_level: 'low' | 'medium' | 'high';
-  strategy: string;
-  aum_usdt: number;
-  current_copiers: number;
-  max_copiers: number;
-  performance_fee_percent: number;
-  max_drawdown: number;
-  stats: {
-    monthly_roi?: number;
-    win_rate?: number;
-    avg_hold_time_hours?: number;
-  };
-  availability: {
-    isFull: boolean;
-    fillPercentage: number;
-    remainingCapacity: number | null;
-  };
+function SummaryStat({
+  icon: Icon,
+  label,
+  value,
+  sub,
+  valueClassName,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  sub?: string;
+  valueClassName?: string;
+}) {
+  return (
+    <Card className="py-0">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 text-text-secondary">
+          <Icon className="h-4 w-4" />
+          <p className="text-xs">{label}</p>
+        </div>
+        <p className={cn('mt-1 text-base md:text-lg font-bold', valueClassName)}>{value}</p>
+        {sub && <p className={cn('text-xs', valueClassName ?? 'text-text-tertiary')}>{sub}</p>}
+      </CardContent>
+    </Card>
+  );
 }
 
-interface Position {
-  id: string;
-  allocation_usdt: number;
-  current_pnl: number;
-  daily_pnl_rate: number;
-  status: 'active' | 'stopped' | 'liquidated';
-  started_at: string;
-  stopped_at?: string;
-  final_pnl?: number;
-  performance_fee_paid?: number;
-  trader: {
-    id: string;
-    name: string;
-    avatar_url: string;
-    strategy: string;
-    performance_fee_percent: number;
-    risk_level: string;
-  };
+function PortfolioSummary({ summary }: { summary: PositionsData['summary'] }) {
+  const pnl = summary.total_current_pnl;
+  const pnlPercent = summary.total_invested > 0 ? (pnl / summary.total_invested) * 100 : 0;
+  const lifetime = summary.total_lifetime_profit;
+  const colorOf = (v: number) => (v >= 0 ? 'text-action-green' : 'text-action-red');
+
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <SummaryStat
+        icon={Wallet}
+        label="Total Value"
+        value={formatUSD(summary.total_current_value ?? summary.total_invested + pnl)}
+        sub={`${formatUSD(summary.total_invested)} invested`}
+      />
+      <SummaryStat
+        icon={TrendingUp}
+        label="Current P&L"
+        value={formatChange(pnl)}
+        sub={formatChange(pnlPercent, true)}
+        valueClassName={colorOf(pnl)}
+      />
+      <SummaryStat
+        icon={History}
+        label="Realized P&L"
+        value={formatChange(lifetime)}
+        valueClassName={colorOf(lifetime)}
+      />
+      <SummaryStat
+        icon={Activity}
+        label="Active Positions"
+        value={String(summary.total_active_positions)}
+      />
+    </div>
+  );
 }
 
-interface PositionsData {
-  grouped: {
-    active: Position[];
-    stopped: Position[];
-    liquidated: Position[];
-  };
-  summary: {
-    total_active_positions: number;
-    total_invested: number;
-    total_current_pnl: number;
-    total_lifetime_profit: number;
-  };
+function PortfolioSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-3">
+        {[...Array(4)].map((_, i) => (
+          <Skeleton key={i} className="h-[88px] w-full" />
+        ))}
+      </div>
+      <Skeleton className="h-6 w-36" />
+      <Skeleton className="h-64 w-full" />
+    </div>
+  );
 }
 
-export default function CopyTradePage() {
-  const [traders, setTraders] = useState<Trader[]>([]);
-  const [positions, setPositions] = useState<PositionsData | null>(null);
-  const [loadingTraders, setLoadingTraders] = useState(true);
-  const [loadingPositions, setLoadingPositions] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+function CopyTradeContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
+  const tradersQuery = useTraders();
+  const positionsQuery = useCopyPositions();
+  const positions = positionsQuery.data;
+
+  // Re-render every minute so "Updated Xm ago" stays accurate between refetches
+  const [, tick] = useReducer((x: number) => x + 1, 0);
   useEffect(() => {
-    fetchTraders();
-    fetchPositions();
-
-    // Auto-refresh positions every 5 minutes (matches tick-cron schedule)
-    const refreshInterval = setInterval(() => {
-      fetchPositions();
-    }, 5 * 60 * 1000); // 5 minutes
-
-    return () => clearInterval(refreshInterval);
+    const id = setInterval(tick, 60 * 1000);
+    return () => clearInterval(id);
   }, []);
 
-  const fetchTraders = async () => {
-    try {
-      const response = await fetch('/api/copy-trade/traders');
-      const data = await response.json();
+  const activePositions = positions?.grouped.active ?? [];
+  const closedPositions = positions
+    ? [...positions.grouped.stopped, ...positions.grouped.liquidated].sort(
+        (a, b) =>
+          new Date(b.stopped_at ?? b.started_at).getTime() -
+          new Date(a.stopped_at ?? a.started_at).getTime()
+      )
+    : [];
+  const hasAnyPosition = activePositions.length > 0 || closedPositions.length > 0;
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch traders');
-      }
+  // Tab lives in the URL; without one, send new users to the traders list
+  const tabParam = searchParams.get('tab');
+  const activeTab: CopyTabValue =
+    tabParam === 'traders' || tabParam === 'portfolio'
+      ? tabParam
+      : positionsQuery.isSuccess && !hasAnyPosition
+      ? 'traders'
+      : 'portfolio';
 
-      setTraders(data.traders || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setLoadingTraders(false);
-    }
+  const setTab = (tab: CopyTabValue) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', tab);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  const fetchPositions = async () => {
-    try {
-      const response = await fetch('/api/copy-trade/positions');
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch positions');
-      }
-
-      setPositions(data);
-    } catch (err) {
-      console.error('Failed to fetch positions:', err);
-    } finally {
-      setLoadingPositions(false);
-    }
-  };
-
-  // Find top ROI for quick stat
-  const topRoi = traders.length > 0
-    ? Math.max(...traders.map((t) => t.stats?.monthly_roi || t.historical_roi_max))
-    : 0;
-
-  // Portfolio Content
-  const portfolioContent = (
-    <div className="space-y-6">
-      {/* Summary Stats */}
-      {positions && positions.summary.total_active_positions > 0 && (
-        <div className="grid grid-cols-2 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="rounded-full bg-brand-primary/10 p-2">
-                  <DollarSign className="h-5 w-5 text-brand-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-text-secondary">Total Invested</p>
-                  <p className="text-base md:text-lg font-bold">
-                    ${positions.summary.total_invested.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="rounded-full bg-action-green/10 p-2">
-                  <TrendingUp className="h-5 w-5 text-action-green" />
-                </div>
-                <div>
-                  <p className="text-xs text-text-secondary">Current P&L</p>
-                  <p className={`text-base md:text-lg font-bold ${
-                    positions.summary.total_current_pnl >= 0 ? 'text-action-green' : 'text-action-red'
-                  }`}>
-                    {positions.summary.total_current_pnl >= 0 ? '+' : ''}
-                    ${positions.summary.total_current_pnl.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+  const portfolioContent = positionsQuery.isPending ? (
+    <PortfolioSkeleton />
+  ) : positionsQuery.isError ? (
+    <Card>
+      <CardContent className="p-8 text-center space-y-3">
+        <p className="text-action-red">{positionsQuery.error.message}</p>
+        <Button variant="outline" size="sm" onClick={() => positionsQuery.refetch()}>
+          Try again
+        </Button>
+      </CardContent>
+    </Card>
+  ) : !hasAnyPosition ? (
+    <Card>
+      <CardContent className="p-12 text-center space-y-4">
+        <div className="mx-auto w-16 h-16 bg-bg-tertiary rounded-full flex items-center justify-center">
+          <UsersRound className="h-8 w-8 text-text-tertiary" />
         </div>
-      )}
+        <div>
+          <h3 className="text-lg font-semibold mb-1">No Positions Yet</h3>
+          <p className="text-text-secondary">
+            Start copying a trader to see your positions here
+          </p>
+        </div>
+        <Button onClick={() => setTab('traders')}>Browse Traders</Button>
+      </CardContent>
+    </Card>
+  ) : (
+    <div className="space-y-6">
+      <PortfolioSummary summary={positions!.summary} />
 
-      {/* Active Positions */}
-      {positions && positions.grouped.active.length > 0 && (
+      {activePositions.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Active Positions</h3>
-          <div className="space-y-4">
-            {positions.grouped.active.map((position) => (
-              <CopyPositionCard
-                key={position.id}
-                position={position}
-                onStop={fetchPositions}
-              />
-            ))}
-          </div>
+          {activePositions.map((position) => (
+            <CopyPositionCard
+              key={position.id}
+              position={position}
+              updatedAt={positionsQuery.dataUpdatedAt}
+            />
+          ))}
         </div>
       )}
 
-      {/* Stopped Positions */}
-      {positions && positions.grouped.stopped.length > 0 && (
+      {closedPositions.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">History</h3>
-          <div className="space-y-4">
-            {positions.grouped.stopped.map((position) => (
-              <CopyPositionCard key={position.id} position={position} />
-            ))}
-          </div>
+          {closedPositions.map((position) => (
+            <CopyPositionCard key={position.id} position={position} />
+          ))}
         </div>
-      )}
-
-      {/* Empty State */}
-      {positions && positions.grouped.active.length === 0 && positions.grouped.stopped.length === 0 && (
-        <Card>
-          <CardContent className="p-12 text-center space-y-4">
-            <div className="mx-auto w-16 h-16 bg-bg-tertiary rounded-full flex items-center justify-center">
-              <UsersRound className="h-8 w-8 text-text-tertiary" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-1">No Active Positions</h3>
-              <p className="text-text-secondary">
-                Start copying a trader to see your positions here
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       )}
     </div>
   );
 
-  // Traders Content
+  const traders = tradersQuery.data ?? [];
   const tradersContent = (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm md:text-base font-semibold">Top Traders</h2>
-        <p className="text-sm text-text-secondary">
-          {loadingTraders ? '...' : `${traders.length} ${traders.length === 1 ? 'trader' : 'traders'}`}
-        </p>
-      </div>
-
-      <TradersGrid traders={traders} loading={loadingTraders} error={error} />
-
-      {/* Disclaimer */}
-      {!loadingTraders && traders.length > 0 && (
-        <Card className="border-bg-tertiary/50">
-          <CardContent className="p-4 text-xs text-text-tertiary">
-            <p>
-              <strong>Risk Warning:</strong> Copy trading involves significant risk. Past performance
-              does not guarantee future results. Performance fees are charged on profits only.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+    <TradersGrid
+      traders={traders}
+      loading={tradersQuery.isPending}
+      error={tradersQuery.isError ? tradersQuery.error.message : null}
+      onRetry={() => tradersQuery.refetch()}
+    />
   );
 
   return (
@@ -260,29 +215,30 @@ export default function CopyTradePage() {
           </p>
         </div>
 
-        {/* Quick Stat */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-brand-primary/10 p-2">
-                <TrendingUp className="h-5 w-5 text-brand-primary" />
-              </div>
-              <div>
-                <p className="text-xs text-text-secondary">Top Monthly ROI</p>
-                <p className="text-base md:text-lg font-bold text-brand-primary">
-                  +{topRoi.toFixed(2)}%
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Tabbed Interface */}
         <CopyTabs
+          value={activeTab}
+          onValueChange={setTab}
           tradersContent={tradersContent}
           portfolioContent={portfolioContent}
+          tradersCount={traders.length}
+          portfolioCount={activePositions.length}
         />
+
+        {/* Disclaimer */}
+        <p className="text-xs text-text-tertiary">
+          <strong>Risk Warning:</strong> Copy trading involves significant risk. Past performance
+          does not guarantee future results. Performance fees are charged on profits only.
+        </p>
       </div>
     </div>
+  );
+}
+
+export default function CopyTradePage() {
+  return (
+    <Suspense fallback={null}>
+      <CopyTradeContent />
+    </Suspense>
   );
 }
