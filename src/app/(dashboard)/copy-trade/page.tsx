@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CopyTabs, type CopyTabValue } from '@/components/copy-trade/CopyTabs';
 import { TradersGrid } from '@/components/copy-trade/TradersGrid';
 import { CopyPositionCard } from '@/components/copy-trade/CopyPositionCard';
+import { DemoBanner } from '@/components/copy-trade/DemoBanner';
 import { useCopyPositions, useTraders } from '@/hooks/useCopyTrade';
 import { cn } from '@/lib/utils';
 import { formatChange, formatUSD } from '@/lib/utils/currency';
@@ -204,6 +205,8 @@ function CopyTradeContent() {
   return (
     <div className="min-h-screen p-4 pt-12 pb-24">
       <div className="mx-auto max-w-4xl space-y-6">
+        <DemoBanner />
+
         {/* Header */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">

@@ -27,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { TraderAvatar } from '@/components/copy-trade/TraderAvatar';
+import { DemoBanner } from '@/components/copy-trade/DemoBanner';
 import { ConfirmActionDialog } from '@/components/shared/ConfirmActionDialog';
 import { useBalances } from '@/hooks/useBalances';
 import {
@@ -140,6 +141,8 @@ export default function TraderDetailPage() {
   return (
     <div className="min-h-screen p-4 pt-16 pb-24">
       <div className="mx-auto max-w-2xl space-y-6">
+        <DemoBanner />
+
         <Link
           href="/copy-trade?tab=traders"
           className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary"

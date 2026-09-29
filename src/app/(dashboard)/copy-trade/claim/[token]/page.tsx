@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import Image from "next/image";
 import { useQueryClient } from "@tanstack/react-query";
+import { DemoBanner } from "@/components/copy-trade/DemoBanner";
 
 interface Trader {
   id: string;
@@ -174,6 +175,8 @@ export default function ClaimPage() {
   return (
     <div className="min-h-screen p-4 pt-16 pb-24">
       <div className="mx-auto max-w-2xl space-y-6">
+        <DemoBanner />
+
         {/* Success Header */}
         <Card className="border-action-green/30 bg-action-green/5">
           <CardContent className="p-6 text-center space-y-4">
