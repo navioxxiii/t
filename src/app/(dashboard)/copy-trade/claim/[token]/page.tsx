@@ -27,6 +27,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import Image from "next/image";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Trader {
   id: string;
@@ -55,6 +56,7 @@ interface ClaimData {
 export default function ClaimPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const token = params.token as string;
 
   const [claimData, setClaimData] = useState<ClaimData | null>(null);
@@ -115,7 +117,10 @@ export default function ClaimPage() {
       }
 
       toast.success(data.message);
-      router.push("/copy-trade");
+      queryClient.invalidateQueries({ queryKey: ["copy-positions"] });
+      queryClient.invalidateQueries({ queryKey: ["traders"] });
+      queryClient.invalidateQueries({ queryKey: ["balances"] });
+      router.push("/copy-trade?tab=portfolio");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to claim spot"
