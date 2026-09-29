@@ -40,13 +40,13 @@ const goldHairline = {
 };
 
 const headerSection = {
-  padding: '40px 0 28px',
+  padding: '48px 0 40px',
   textAlign: 'center' as const,
   backgroundColor: branding.email.colors.background,
 };
 
 const logo = {
-  margin: '0 auto 12px',
+  margin: '0 auto 16px',
   display: 'block',
   borderRadius: '8px',
 };
