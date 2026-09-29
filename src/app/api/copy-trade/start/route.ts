@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server';
 import { COPY_TRADE_ENABLED } from '@/lib/feature-flags';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { initializeSimulationParams } from '@/lib/copy-trade/pnl-simulator';
+import { MIN_COPY_ALLOCATION_USDT } from '@/types/copy-trade';
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,6 +49,13 @@ export async function POST(request: NextRequest) {
     if (isNaN(allocationAmount) || allocationAmount <= 0) {
       return NextResponse.json(
         { error: 'Invalid allocation amount' },
+        { status: 400 }
+      );
+    }
+
+    if (allocationAmount < MIN_COPY_ALLOCATION_USDT) {
+      return NextResponse.json(
+        { error: `Minimum allocation is ${MIN_COPY_ALLOCATION_USDT} USDT` },
         { status: 400 }
       );
     }

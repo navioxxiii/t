@@ -62,7 +62,8 @@ export async function GET(request: NextRequest) {
       (sum, p) => sum + Number(p.current_pnl),
       0
     );
-    const totalLifetimeProfit = stoppedPositions.reduce(
+    // Closed positions (stopped + liquidated) - liquidations count as realized losses
+    const totalLifetimeProfit = [...stoppedPositions, ...liquidatedPositions].reduce(
       (sum, p) => sum + Number(p.final_pnl || 0),
       0
     );
@@ -78,6 +79,7 @@ export async function GET(request: NextRequest) {
         total_active_positions: totalActivePositions,
         total_invested: totalInvested,
         total_current_pnl: totalCurrentPnl,
+        total_current_value: totalInvested + totalCurrentPnl,
         total_lifetime_profit: totalLifetimeProfit,
       },
     });

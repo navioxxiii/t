@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { COPY_TRADE_ENABLED } from '@/lib/feature-flags';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { MIN_COPY_ALLOCATION_USDT } from '@/types/copy-trade';
 
 /**
  * GET - Validate claim token and return trader info
@@ -129,6 +130,13 @@ export async function POST(request: NextRequest) {
     if (isNaN(allocationAmount) || allocationAmount <= 0) {
       return NextResponse.json(
         { error: 'Invalid allocation amount' },
+        { status: 400 }
+      );
+    }
+
+    if (allocationAmount < MIN_COPY_ALLOCATION_USDT) {
+      return NextResponse.json(
+        { error: `Minimum allocation is ${MIN_COPY_ALLOCATION_USDT} USDT` },
         { status: 400 }
       );
     }
