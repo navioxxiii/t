@@ -15,37 +15,10 @@ import { CopyTabs, type CopyTabValue } from '@/components/copy-trade/CopyTabs';
 import { TradersGrid } from '@/components/copy-trade/TradersGrid';
 import { CopyPositionCard } from '@/components/copy-trade/CopyPositionCard';
 import { DemoBanner } from '@/components/copy-trade/DemoBanner';
+import { SummaryStat } from '@/components/shared/SummaryStat';
 import { useCopyPositions, useTraders } from '@/hooks/useCopyTrade';
-import { cn } from '@/lib/utils';
 import { formatChange, formatUSD } from '@/lib/utils/currency';
 import type { PositionsData } from '@/types/copy-trade';
-
-function SummaryStat({
-  icon: Icon,
-  label,
-  value,
-  sub,
-  valueClassName,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  sub?: string;
-  valueClassName?: string;
-}) {
-  return (
-    <Card className="py-0">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-2 text-text-secondary">
-          <Icon className="h-4 w-4" />
-          <p className="text-xs">{label}</p>
-        </div>
-        <p className={cn('mt-1 text-base md:text-lg font-bold', valueClassName)}>{value}</p>
-        {sub && <p className={cn('text-xs', valueClassName ?? 'text-text-tertiary')}>{sub}</p>}
-      </CardContent>
-    </Card>
-  );
-}
 
 function PortfolioSummary({ summary }: { summary: PositionsData['summary'] }) {
   const pnl = summary.total_current_pnl;
