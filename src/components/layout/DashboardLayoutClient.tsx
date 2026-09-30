@@ -8,6 +8,7 @@ import { DashboardHeader } from "@/components/navigation/DashboardHeader";
 import { AppLockWrapper } from "@/components/security/AppLockWrapper";
 import { useAuthStore } from "@/stores/authStore";
 import { useGlobalPresence } from "@/hooks/useGlobalPresence";
+import { PWAInstallButton } from "@/components/pwa/PWAInstallButton";
 import { openSupportChat, useHideTawkBubble } from "@/components/chat/TawkTo";
 
 export default function DashboardLayoutClient({ children }: { children: React.ReactNode }) {
@@ -31,6 +32,8 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
               <KYCStatusBanner />
             </div>
             <main className="pb-nav">{children}</main>
+            {/* Inside KYCGate: never over the lock screen, KYC gate, auth or public pages */}
+            <PWAInstallButton />
           </div>
         </KYCGate>
       </AppLockWrapper>

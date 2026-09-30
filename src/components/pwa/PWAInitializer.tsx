@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { branding } from '@/config/branding';
-import { PWAInstallButton } from './PWAInstallButton';
+import { initInstallCapture } from '@/lib/pwa/install';
 
 const LOCALHOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 const SW_PATH = '/sw.js';
@@ -12,6 +12,9 @@ export function PWAInitializer() {
     if (typeof window === 'undefined') {
       return;
     }
+
+    // Capture the install prompt early; the banner (dashboard) and Settings read it later
+    initInstallCapture();
 
     if (!('serviceWorker' in navigator)) {
       console.warn('[PWA] Service workers are not supported in this browser.');
@@ -44,21 +47,11 @@ export function PWAInitializer() {
 
     registerServiceWorker();
 
-    const handleAppInstalled = () => {
-      console.info('[PWA] App installed');
-      // Clear the dismissed flags so button doesn't show again
-      localStorage.removeItem('pwa-install-dismissed'); // Old flag (legacy)
-      localStorage.removeItem('pwa-install-dismissed-at'); // New timestamp-based flag
-    };
-
-    window.addEventListener('appinstalled', handleAppInstalled);
-
     return () => {
       mounted = false;
-      window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 
-  return <PWAInstallButton />;
+  return null;
 }
 

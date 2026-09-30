@@ -1,133 +1,77 @@
 /**
- * PWA Install Button
- * One-tap install for Android, guided install for iOS
+ * PWA Install Banner
+ * One-tap install on supporting browsers, guided install on iOS
  *
- * Features:
- * - Only shows on dashboard pages (not admin, landing, etc.)
- * - Respects already-installed state
- * - 1-month dismiss period (not permanent)
+ * Shown sparingly so it helps rather than nags:
+ * - Only on the wallet home, and only to browsers that can actually install
+ * - Only after a few sessions, and after the user has been on the page a while
+ * - Backs off after each dismissal (14 days, then 60 days, then never)
+ * - Always available on demand from Settings → Install app
  */
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { X, Download } from 'lucide-react';
 import { branding } from '@/config/branding';
 import { Button } from '@/components/ui/button';
-import { X, Download } from 'lucide-react';
+import {
+  isBannerDue,
+  promptInstall,
+  recordDismissal,
+  recordSession,
+  useInstallPlatform,
+} from '@/lib/pwa/install';
 import { IOSInstallGuide } from './IOSInstallGuide';
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
-
-const DISMISS_DURATION = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
-
-// Routes where banner should NOT show
-const EXCLUDED_ROUTES = [
-  '/admin',
-  '/login',
-  '/register',
-  '/verify-email',
-  '/reset-password',
-  '/', // Landing page
-];
-
-// Check if dismissed (must be called client-side only)
-function isDismissed(): boolean {
-  if (typeof window === 'undefined') return true; // SSR: assume dismissed
-  const dismissedAt = localStorage.getItem('pwa-install-dismissed-at');
-  if (!dismissedAt) return false;
-
-  const dismissTime = parseInt(dismissedAt, 10);
-  const timeSinceDismiss = Date.now() - dismissTime;
-
-  if (timeSinceDismiss < DISMISS_DURATION) {
-    return true; // Still within dismiss period
-  }
-
-  // Dismiss period expired, clear it
-  localStorage.removeItem('pwa-install-dismissed-at');
-  return false;
-}
+// Allow-list: new pages never get the banner by default
+const BANNER_ROUTES = ['/dashboard'];
+// Let people settle in before asking
+const DWELL_MS = 15_000;
 
 export function PWAInstallButton() {
   const pathname = usePathname();
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [showButton, setShowButton] = useState(false);
+  const platform = useInstallPlatform();
+  const [visible, setVisible] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
-  const [dismissed, setDismissed] = useState(true); // Start as dismissed to prevent flash
-  const isIOS = typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const isStandalone = typeof window !== 'undefined' && (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    (window.navigator as { standalone?: boolean }).standalone === true
-  );
 
-  // Check if current route is excluded
-  const isExcludedRoute = EXCLUDED_ROUTES.some(route =>
-    pathname === route || pathname.startsWith(`${route}/`)
-  );
+  const onAllowedPage = BANNER_ROUTES.includes(pathname);
 
-  // Check dismiss status on mount (client-side only)
+  // Count this session toward engagement
   useEffect(() => {
-    setDismissed(isDismissed());
+    recordSession();
   }, []);
 
   useEffect(() => {
-    // Don't show if dismissed
-    if (dismissed) {
-      return;
-    }
-
-    // Don't show if already installed (standalone mode)
-    if (isStandalone) {
-      console.info('[PWA Install] Already installed (standalone mode)');
-      return;
-    }
-
-    // Don't show on excluded routes
-    if (isExcludedRoute) {
-      console.info('[PWA Install] Excluded route:', pathname);
-      return;
-    }
-
-    // Android/Chrome: wait for native prompt
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShowButton(true);
-    };
-    window.addEventListener('beforeinstallprompt', handler);
-
-    // Fallback: show button after 30s even if no prompt (iOS + some browsers)
-    const timer = setTimeout(() => {
-      setShowButton(true);
-    }, 30_000);
-
+    if (!platform || !onAllowedPage || !isBannerDue()) return;
+    const timer = setTimeout(() => setVisible(true), DWELL_MS);
     return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
       clearTimeout(timer);
+      setVisible(false);
     };
-  }, [isStandalone, isExcludedRoute, pathname, dismissed]);
-
-  const handleInstall = () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-    } else {
-      setShowIOSGuide(true);
-    }
-  };
+  }, [platform, onAllowedPage]);
 
   const handleDismiss = () => {
-    setShowButton(false);
-    setDismissed(true);
-    // Store dismiss timestamp (not permanent - expires in 30 days)
-    localStorage.setItem('pwa-install-dismissed-at', Date.now().toString());
-    console.info('[PWA Install] Dismissed for 30 days');
+    setVisible(false);
+    recordDismissal();
   };
 
-  if (!showButton || dismissed) return null;
+  const handleInstall = async () => {
+    if (platform === 'ios') {
+      setShowIOSGuide(true);
+      return;
+    }
+    // Declining the browser dialog is recorded as a dismissal inside promptInstall
+    setVisible(false);
+    await promptInstall();
+  };
+
+  if (!visible || !platform || !onAllowedPage) {
+    return (
+      <IOSInstallGuide open={showIOSGuide} onOpenChange={setShowIOSGuide} onDismissPermanently={handleDismiss} />
+    );
+  }
 
   return (
     <>
@@ -140,7 +84,7 @@ export function PWAInstallButton() {
           <div className="flex-1 min-w-0">
             <h3 className="text-white font-bold text-sm">Install {branding.name.full}</h3>
             <p className="text-white/80 text-xs">
-              {isIOS ? 'Add to Home Screen for quick access' : 'Install for offline use & faster loading'}
+              {platform === 'ios' ? 'Add to Home Screen for quick access' : 'Install for offline use & faster loading'}
             </p>
           </div>
 
@@ -152,22 +96,14 @@ export function PWAInstallButton() {
             >
               Install
             </Button>
-            <button
-              onClick={handleDismiss}
-              className="text-white/60 hover:text-white p-1"
-              aria-label="Dismiss"
-            >
+            <button onClick={handleDismiss} className="text-white/60 hover:text-white p-1" aria-label="Dismiss">
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
       </div>
 
-      <IOSInstallGuide
-        open={showIOSGuide}
-        onOpenChange={setShowIOSGuide}
-        onDismissPermanently={handleDismiss}
-      />
+      <IOSInstallGuide open={showIOSGuide} onOpenChange={setShowIOSGuide} onDismissPermanently={handleDismiss} />
     </>
   );
 }
