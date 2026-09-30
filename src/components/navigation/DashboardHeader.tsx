@@ -102,19 +102,21 @@ export function DashboardHeader({ className, onSupportClick }: DashboardHeaderPr
 
           {/* Right side */}
           <div className="flex items-center gap-2">
-            {/* Token preferences button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                haptics.light();
-                setPreferencesOpen(true);
-              }}
-              className="hover:bg-bg-tertiary"
-              aria-label="Token preferences"
-            >
-              <SlidersHorizontal className="h-5 w-5" />
-            </Button>
+            {/* Token preferences button - visibility only affects the wallet list */}
+            {pathname === '/dashboard' && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  haptics.light();
+                  setPreferencesOpen(true);
+                }}
+                className="hover:bg-bg-tertiary"
+                aria-label="Token preferences"
+              >
+                <SlidersHorizontal className="h-5 w-5" />
+              </Button>
+            )}
 
             {/* Support button - mobile only */}
             {onSupportClick && (
