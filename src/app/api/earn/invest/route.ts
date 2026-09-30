@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { EARN_ENABLED } from '@/lib/feature-flags';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { addMonths, calcDailyRate, calcTotalProfit } from '@/lib/earn/calc';
 
 export async function POST(request: NextRequest) {
   try {
@@ -142,17 +143,12 @@ export async function POST(request: NextRequest) {
     // Calculate profit parameters
     const apyPercent = Number(vault.apy_percent);
     const durationMonths = Number(vault.duration_months);
-    const durationDays = Math.round(durationMonths * 30.44); // Average days per month
+    const investedAt = new Date();
+    const matureDate = addMonths(investedAt, durationMonths);
 
-    // Total profit = principal × (APY/100) × (months/12)
-    const totalProfit = investmentAmount * (apyPercent / 100) * (durationMonths / 12);
-
-    // Daily profit rate for smooth increment display
-    const dailyProfitRate = totalProfit / durationDays;
-
-    // Calculate maturity date
-    const matureDate = new Date();
-    matureDate.setMonth(matureDate.getMonth() + durationMonths);
+    // Total profit = principal × (APY/100) × (months/12), accrued daily over the real lock period
+    const totalProfit = calcTotalProfit(investmentAmount, apyPercent, durationMonths);
+    const dailyProfitRate = calcDailyRate(totalProfit, investedAt, matureDate);
 
     // ──── TRANSACTION: Debit balance + Create position + Update vault ────
 
@@ -182,6 +178,7 @@ export async function POST(request: NextRequest) {
         daily_profit_rate: dailyProfitRate,
         total_profit_usdt: totalProfit,
         status: 'active',
+        invested_at: investedAt.toISOString(),
         matures_at: matureDate.toISOString(),
       })
       .select()
@@ -203,10 +200,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. Update vault's filled amount
-    const { error: vaultUpdateError } = await supabase
+    // 3. Update vault's filled amount (admin client - users can't write earn_vaults under RLS)
+    const newFilled = currentFilled + investmentAmount;
+    const vaultUpdate: { current_filled: number; status?: string } = { current_filled: newFilled };
+    if (totalCapacity && newFilled >= totalCapacity) {
+      vaultUpdate.status = 'sold_out';
+    }
+
+    const { error: vaultUpdateError } = await adminSupabase
       .from('earn_vaults')
-      .update({ current_filled: currentFilled + investmentAmount })
+      .update(vaultUpdate)
       .eq('id', vaultId);
 
     if (vaultUpdateError) {
