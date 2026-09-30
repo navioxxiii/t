@@ -1,6 +1,6 @@
 /**
  * GET/POST /api/copy-trade/tick-cron
- * Background cron job (runs every 5 minutes)
+ * Background job, scheduled every 5 minutes via cron-job.org (Authorization: Bearer CRON_SECRET)
  * - Updates PnL for all active positions
  * - Processes waitlist (notify next person when spot opens)
  * - Expires old claims (24hr timeout)
@@ -8,11 +8,11 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { COPY_TRADE_ENABLED } from "@/lib/feature-flags";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { calculatePnLUpdate } from "@/lib/copy-trade/pnl-simulator";
 import { getEmailProvider } from "@/lib/email/service";
+import { rejectUnauthorizedCron } from "@/lib/cron/auth";
 
 export async function GET(request: NextRequest) {
   return handleTickCron(request);
@@ -35,15 +35,8 @@ async function handleTickCron(request: NextRequest) {
     }
 
     // Verify cron authorization
-    const authHeader = request.headers.get("authorization");
-    const cronSecret = process.env.CRON_SECRET;
-
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      if (process.env.NODE_ENV === "production") {
-        console.log("Unauthorized cron request in production");
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-    }
+    const unauthorized = rejectUnauthorizedCron(request);
+    if (unauthorized) return unauthorized;
 
     const supabase =  createAdminClient();
     const now = new Date();

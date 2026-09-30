@@ -48,6 +48,6 @@ next-env.d.ts
 rewrite_commits.sh
 tsconfig.tsbuildinfo
 docs
-custom.ts
 custom-scripts/
+src/lib/admin/custom.ts
 DNS-SETUP.md

@@ -1,12 +1,13 @@
 /**
  * GET/POST /api/earn/mature-cron
  * Daily cron job - marks positions as matured when matures_at is reached
- * Runs every day at midnight UTC via Vercel Cron
+ * Scheduled daily via cron-job.org (Authorization: Bearer CRON_SECRET)
  * Does NOT credit wallets - only updates status to 'matured'
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { rejectUnauthorizedCron } from '@/lib/cron/auth';
 import { EARN_ENABLED } from '@/lib/feature-flags';
 
 export async function GET(request: NextRequest) {
@@ -27,22 +28,13 @@ async function handleMatureCron(request: NextRequest) {
       );
     }
 
-    // Verify cron authorization (Vercel Cron sends special header)
-    const authHeader = request.headers.get('authorization');
-    const cronSecret = process.env.CRON_SECRET;
+    // Verify cron authorization
+    const unauthorized = rejectUnauthorizedCron(request);
+    if (unauthorized) return unauthorized;
 
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      // If CRON_SECRET is set, validate it
-      // In development, allow running without secret
-      if (process.env.NODE_ENV === 'production') {
-        return NextResponse.json(
-          { error: 'Unauthorized' },
-          { status: 401 }
-        );
-      }
-    }
-
-    const supabase = await createClient();
+    // Admin client: a cron request has no user session, so the user client
+    // would see no positions under RLS and silently mature nothing
+    const supabase = createAdminClient();
     const now = new Date().toISOString();
 
     // Find all active positions that have reached maturity
