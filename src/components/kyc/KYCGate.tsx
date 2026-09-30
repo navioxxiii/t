@@ -30,7 +30,6 @@ export function KYCGate({ children }: { children: React.ReactNode }) {
 
   const [showReconnecting, setShowReconnecting] = useState(false);
   const [reconnectTimeout, setReconnectTimeout] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
 
@@ -46,24 +45,20 @@ export function KYCGate({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timer);
   }, [showReconnecting]);
 
-  // Reset states when profile loads successfully
+  // Genuinely signed out (not an unresolved/errored auth check) -> go to login.
+  // Must run in an effect: navigating during render loops with the middleware redirect
+  const signedOut = !loading && !user && !profileError && !isLoggingOut;
   useEffect(() => {
-    if (profile) {
-      setShowReconnecting(false);
-      setReconnectTimeout(false);
-      setRetryCount(0);
-      setIsRetrying(false);
-    }
-  }, [profile]);
+    if (signedOut) router.replace('/login');
+  }, [signedOut, router]);
 
   // Return null during logout to prevent error flash
   if (isLoggingOut) {
     return null;
   }
 
-  // If no user after loading completes, redirect to login
-  if (!loading && !user) {
-    router.push('/login');
+  // Redirect is handled by the effect above
+  if (signedOut) {
     return null;
   }
 
@@ -86,36 +81,8 @@ export function KYCGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // No profile loaded after loading finished - show error with recovery options
+  // Auth check or profile load failed - show error with recovery options
   if (!profile && !loading) {
-    // Last-ditch localStorage recovery before showing error
-    if (typeof window !== 'undefined' && !showReconnecting && retryCount < MAX_RETRIES && !reconnectTimeout) {
-      const storedAuth = localStorage.getItem('auth-storage');
-      if (storedAuth) {
-        try {
-          const parsed = JSON.parse(storedAuth);
-          if (parsed?.state?.profile) {
-            setShowReconnecting(true);
-            setRetryCount(prev => prev + 1);
-            refreshProfile();
-            return (
-              <div className="flex h-full items-center justify-center bg-bg-primary pt-nav pb-safe">
-                <div className="flex flex-col items-center gap-4">
-                  <Loader2 className="h-8 w-8 animate-spin text-brand-primary" />
-                  <p className="text-text-secondary">Reconnecting...</p>
-                  <p className="text-xs text-text-tertiary">
-                    Attempt {retryCount + 1} of {MAX_RETRIES}
-                  </p>
-                </div>
-              </div>
-            );
-          }
-        } catch {
-          // Fall through to error screen
-        }
-      }
-    }
-
     // Show reconnecting spinner if still in progress
     if (showReconnecting && !reconnectTimeout) {
       return (
@@ -157,11 +124,16 @@ export function KYCGate({ children }: { children: React.ReactNode }) {
           <div className="space-y-3">
             <Button
               onClick={async () => {
-                setRetryCount(0);
+                // Session itself couldn't be resolved - restart auth from scratch
+                if (!user) {
+                  window.location.reload();
+                  return;
+                }
                 setReconnectTimeout(false);
                 setShowReconnecting(true);
                 setIsRetrying(true);
                 await refreshProfile();
+                setShowReconnecting(false);
                 setIsRetrying(false);
               }}
               className="w-full"
@@ -202,7 +174,6 @@ export function KYCGate({ children }: { children: React.ReactNode }) {
 
   // At this point, profile must exist
   if (!profile) {
-    router.push('/login');
     return null;
   }
 

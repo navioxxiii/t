@@ -404,93 +404,90 @@ export const useAuthStore = create<AuthState>()(
         set({ authInitialized: true });
         console.log('[AuthStore] initialize: Starting authentication initialization.');
 
-        const INIT_TIMEOUT = 10000; // 10 seconds
+        const SESSION_TIMEOUT = 10000; // 10 seconds
+        const supabase = createClient();
 
-        try {
-          const supabase = createClient();
+        // Listen BEFORE the initial fetch so a slow start can still recover through
+        // TOKEN_REFRESHED / SIGNED_IN instead of being stuck without a listener
+        supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
+          // Skip INITIAL_SESSION event (handled below)
+          if (event === 'INITIAL_SESSION') {
+            console.log('[AuthStore] onAuthStateChange: Skipping INITIAL_SESSION event.');
+            return;
+          }
 
-          const initWithTimeout = Promise.race([
-            (async () => {
-              const { data: { session } } = await supabase.auth.getSession();
-              console.log('[AuthStore] initialize: Got session data.', { session });
+          // supabase-js runs this callback while holding its auth lock - awaiting Supabase
+          // calls here can deadlock, so defer the work until the lock is released
+          setTimeout(() => {
+            void (async () => {
+              // For SIGNED_IN or TOKEN_REFRESHED with same user and existing profile,
+              // use silent refresh to avoid showing loading spinner
+              if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') &&
+                  session?.user &&
+                  get().user?.id === session.user.id &&
+                  get().profile) {
+                console.log(`[AuthStore] onAuthStateChange: ${event} for same user with profile, doing silent refresh`);
+                set({ user: session.user, profileError: null }); // Update user with new session/tokens
+                await get().silentRefreshProfile(session.user.id, session.user.email);
+                return;
+              }
+
+              console.log(`[AuthStore] onAuthStateChange: Auth state changed. Event: ${event}`, { session });
 
               if (session?.user) {
                 set({ user: session.user });
-                console.log(`[AuthStore] initialize: User found, attempting to fetch profile for userId: ${session.user.id}`);
                 const profileLoaded = await get().fetchProfileWithRetry(session.user.id, session.user.email);
-
-                if (!profileLoaded) {
-                  // If profile fails to load, treat as a failed login
-                  console.warn('[AuthStore] initialize: Profile failed to load, nulling user and profile.');
-                  set({
-                    user: null,
-                    profile: null,
-                    loading: false,
-                    profileError: 'Failed to load user profile during initialization.',
-                  });
-                } else {
-                  console.log('[AuthStore] initialize: Profile successfully loaded.');
+                if (!profileLoaded && !get().isFetching) {
+                  // Keep the user - KYCGate shows its retry screen instead of bouncing to /login
+                  console.warn('[AuthStore] onAuthStateChange: Profile failed to load.');
+                  set({ loading: false, profileError: 'Failed to load user profile after auth change.' });
                 }
               } else {
-                // No session - clear stale cached profile
-                console.log('[AuthStore] initialize: No session found, clearing user and profile.');
-                set({ user: null, profile: null, loading: false });
+                console.log('[AuthStore] onAuthStateChange: No session found, clearing user and profile.');
+                set({ user: null, profile: null, loading: false, profileError: null });
               }
-            })(),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Init timeout')), INIT_TIMEOUT)
-            )
+            })();
+          }, 0);
+        });
+
+        // Resolve the current session. Only this call is time-boxed - profile loading
+        // has its own retry schedule and must not be cut off by an outer timeout
+        let session: Session | null;
+        try {
+          const { data } = await Promise.race([
+            supabase.auth.getSession(),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('Session check timeout')), SESSION_TIMEOUT)
+            ),
           ]);
-
-          await initWithTimeout;
-          console.log('[AuthStore] initialize: Initialization complete.');
-
-          // Setup auth listener AFTER initial fetch completes
-          supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
-            // Skip INITIAL_SESSION event (already handled above)
-            if (event === 'INITIAL_SESSION') {
-              console.log('[AuthStore] onAuthStateChange: Skipping INITIAL_SESSION event.');
-              return;
-            }
-            
-            // For SIGNED_IN or TOKEN_REFRESHED with same user and existing profile,
-            // use silent refresh to avoid showing loading spinner
-            if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') &&
-                session?.user &&
-                get().user?.id === session.user.id &&
-                get().profile) {
-              console.log(`[AuthStore] onAuthStateChange: ${event} for same user with profile, doing silent refresh`);
-              set({ user: session.user }); // Update user with new session/tokens
-              await get().silentRefreshProfile(session.user.id, session.user.email);
-              return;
-            }
-
-            console.log(`[AuthStore] onAuthStateChange: Auth state changed. Event: ${event}`, { session });
-
-            if (session?.user) {
-              set({ user: session.user });
-              console.log(`[AuthStore] onAuthStateChange: User found, attempting to fetch profile for userId: ${session.user.id}`);
-              const profileLoaded = await get().fetchProfileWithRetry(session.user.id, session.user.email);
-              if (!profileLoaded) {
-                console.warn('[AuthStore] onAuthStateChange: Profile failed to load, nulling user and profile.');
-                 set({
-                    user: null,
-                    profile: null,
-                    loading: false,
-                    profileError: 'Failed to load user profile after auth change.',
-                  });
-              } else {
-                console.log('[AuthStore] onAuthStateChange: Profile successfully loaded.');
-              }
-            } else {
-              console.log('[AuthStore] onAuthStateChange: No session found, clearing user and profile.');
-              set({ user: null, profile: null, loading: false });
-            }
-          });
-
+          session = data.session;
+          console.log('[AuthStore] initialize: Got session data.', { session });
         } catch (error) {
-          console.error('[AuthStore] initialize: Error during initialization or timeout.', error);
-          set({ loading: false, profileError: 'Initialization timeout' });
+          // Auth state is unknown, not signed out - show the retry screen rather than
+          // redirecting to /login (middleware would bounce a still-valid session back)
+          console.error('[AuthStore] initialize: Could not resolve session.', error);
+          set({ loading: false, profileError: 'Could not reach the authentication server.' });
+          return;
+        }
+
+        if (!session?.user) {
+          // No session - clear stale cached profile
+          console.log('[AuthStore] initialize: No session found, clearing user and profile.');
+          set({ user: null, profile: null, loading: false, profileError: null });
+          return;
+        }
+
+        set({ user: session.user });
+        console.log(`[AuthStore] initialize: User found, attempting to fetch profile for userId: ${session.user.id}`);
+        const profileLoaded = await get().fetchProfileWithRetry(session.user.id, session.user.email);
+
+        // A false result while another fetch is in flight isn't a failure - that fetch will finish
+        if (!profileLoaded && !get().isFetching) {
+          // Keep the user so KYCGate shows its retry screen instead of looping through /login
+          console.warn('[AuthStore] initialize: Profile failed to load.');
+          set({ loading: false, profileError: 'Failed to load user profile during initialization.' });
+        } else {
+          console.log('[AuthStore] initialize: Initialization complete.');
         }
       },
     }),
