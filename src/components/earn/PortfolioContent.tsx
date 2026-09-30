@@ -153,7 +153,7 @@ export function PortfolioContent({ data, loading, error, onRetry, onBrowseVaults
 
       {!hasOpenPositions && (
         <Card>
-          <CardContent className="p-12 text-center space-y-4">
+          <CardContent className="p-8 md:p-12 text-center space-y-4">
             <div className="mx-auto w-16 h-16 bg-bg-tertiary rounded-full flex items-center justify-center">
               <PiggyBank className="h-8 w-8 text-text-tertiary" />
             </div>

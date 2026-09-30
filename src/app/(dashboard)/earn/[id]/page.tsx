@@ -43,7 +43,7 @@ export default function VaultDetailPage() {
 
   if (isPending) {
     return (
-      <div className="min-h-screen p-4 pt-16 pb-24">
+      <div className="min-h-screen p-4 pt-6 pb-24">
         <div className="mx-auto max-w-2xl space-y-6">
           <Skeleton className="h-5 w-24" />
           <Skeleton className="h-72 w-full" />
@@ -55,7 +55,7 @@ export default function VaultDetailPage() {
 
   if (isError || !vault) {
     return (
-      <div className="min-h-screen p-4 pt-16 pb-24">
+      <div className="min-h-screen p-4 pt-6 pb-24">
         <div className="mx-auto max-w-2xl">
           <Card>
             <CardContent className="p-10 text-center space-y-4">
@@ -132,14 +132,14 @@ export default function VaultDetailPage() {
   };
 
   const terms = [
-    { icon: Clock, label: 'Lock Period', value: formatDuration(vault.duration_months, true) },
-    { icon: Lock, label: 'Min Investment', value: formatUSD(vault.min_amount) },
-    { icon: TrendingUp, label: 'Max Investment', value: vault.max_amount ? formatUSD(vault.max_amount) : 'No limit' },
-    { icon: CalendarCheck, label: 'Matures (if today)', value: formatDate(maturityDate) },
+    { icon: Clock, label: 'Lock period', value: formatDuration(vault.duration_months, true) },
+    { icon: Lock, label: 'Minimum', value: formatUSD(vault.min_amount) },
+    { icon: TrendingUp, label: 'Maximum', value: vault.max_amount ? formatUSD(vault.max_amount) : 'No limit' },
+    { icon: CalendarCheck, label: 'Unlocks on', value: formatDate(maturityDate) },
   ];
 
   return (
-    <div className="min-h-screen p-4 pt-16 pb-24">
+    <div className="min-h-screen p-4 pt-6 pb-24">
       <div className="mx-auto max-w-2xl space-y-6">
         <Link
           href="/earn?tab=vaults"
@@ -179,7 +179,7 @@ export default function VaultDetailPage() {
             <div className="grid grid-cols-2 gap-3">
               {terms.map((term) => (
                 <div key={term.label} className="flex items-center gap-3 p-3 bg-bg-tertiary rounded-lg">
-                  <term.icon className="h-5 w-5 shrink-0 text-text-tertiary" />
+                  <term.icon className="hidden sm:block h-5 w-5 shrink-0 text-text-tertiary" />
                   <div className="min-w-0">
                     <p className="text-xs text-text-tertiary">{term.label}</p>
                     <p className="font-bold text-sm md:text-base truncate">{term.value}</p>
@@ -195,7 +195,7 @@ export default function VaultDetailPage() {
                   <span className="font-semibold">
                     {isFull
                       ? 'Full'
-                      : `${formatUSD(remainingCapacity ?? 0, { compact: true })} left`}
+                      : `${formatUSD(remainingCapacity ?? 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} left`}
                   </span>
                 </div>
                 <div className="h-2 bg-bg-tertiary rounded-full overflow-hidden">

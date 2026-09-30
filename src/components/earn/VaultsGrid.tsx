@@ -124,9 +124,9 @@ export function VaultsGrid({ vaults, loading, error, onRetry }: VaultsGridProps)
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-2">
         {durationFilters.length > 2 && (
-          <div className="flex items-center gap-1 rounded-lg bg-bg-tertiary p-1">
+          <div className="no-scrollbar flex min-w-0 items-center gap-1 overflow-x-auto rounded-lg bg-bg-tertiary p-1">
             {durationFilters.map((filter) => (
               <button
                 key={filter.value}
@@ -134,7 +134,7 @@ export function VaultsGrid({ vaults, loading, error, onRetry }: VaultsGridProps)
                 aria-pressed={durationFilter === filter.value}
                 onClick={() => setDurationFilter(filter.value)}
                 className={cn(
-                  'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                  'shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
                   durationFilter === filter.value
                     ? 'bg-bg-secondary text-text-primary shadow-sm'
                     : 'text-text-secondary hover:text-text-primary'
@@ -146,9 +146,9 @@ export function VaultsGrid({ vaults, loading, error, onRetry }: VaultsGridProps)
           </div>
         )}
 
-        <div className="ml-auto">
+        <div className="ml-auto shrink-0">
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
-            <SelectTrigger size="sm" className="h-8 w-[140px] text-xs">
+            <SelectTrigger size="sm" className="h-8 w-[124px] text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

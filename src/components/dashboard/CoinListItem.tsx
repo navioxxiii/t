@@ -94,22 +94,22 @@ export function CoinListItem({
       </div>
 
       {/* Coin Info */}
-      <div className="flex-1 text-left">
-        <div className="font-semibold text-base leading-tight text-text-primary">
+      <div className="min-w-0 flex-1 text-left">
+        <div className="truncate font-semibold text-base leading-tight text-text-primary">
           {token.name}
         </div>
-        <div className="flex items-center gap-2 mt-1">
-          <span className="text-sm text-text-secondary">
+        <div className="flex items-center gap-2 mt-1 whitespace-nowrap">
+          <span className="truncate text-sm text-text-secondary">
             {formatCrypto(availableBalance, token.symbol)} {token.symbol}
           </span>
           {hasLockedBalance && (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-warning/10 text-warning text-xs rounded">
+            <span className="inline-flex shrink-0 items-center gap-1 px-1.5 py-0.5 bg-warning/10 text-warning text-xs rounded">
               <Lock className="h-3 w-3" />
               {formatCrypto(lockedBalance, token.symbol)}
             </span>
           )}
           {networkCount > 1 && (
-            <span className="text-xs text-muted-foreground">
+            <span className="hidden sm:inline text-xs text-muted-foreground">
               • {networkCount} networks
             </span>
           )}
@@ -136,7 +136,7 @@ export function CoinListItem({
       )} */}
 
       {/* Value & Change */}
-      <div className="text-right">
+      <div className="shrink-0 text-right">
         {!price || priceError ? (
           <>
             <div className="font-semibold text-base leading-tight text-text-secondary">

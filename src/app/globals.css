@@ -452,6 +452,15 @@
       padding-bottom: calc(5rem + var(--safe-bottom));
     }
   }
+
+  /* Horizontal scrollers (quick actions, filter pills) without a visible scrollbar */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Shimmer loading effect for skeletons */

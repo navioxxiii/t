@@ -71,7 +71,7 @@ export default function TraderDetailPage() {
 
   if (isPending || !trader) {
     return (
-      <div className="min-h-screen p-4 pt-16 pb-24">
+      <div className="min-h-screen p-4 pt-6 pb-24">
         <div className="mx-auto max-w-2xl">
           <div className="animate-pulse space-y-6">
             <div className="h-8 w-32 bg-bg-tertiary rounded" />
@@ -139,7 +139,7 @@ export default function TraderDetailPage() {
   );
 
   return (
-    <div className="min-h-screen p-4 pt-16 pb-24">
+    <div className="min-h-screen p-4 pt-6 pb-24">
       <div className="mx-auto max-w-2xl space-y-6">
         <DemoBanner />
 
