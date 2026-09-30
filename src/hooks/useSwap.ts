@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { calculateSwapEstimate, type SwapEstimate } from '@/lib/binance/swap';
+import type { SwapEstimate } from '@/lib/binance/swap';
 
 interface SwapRequest {
   fromCoin: string;
@@ -63,7 +63,14 @@ export function useSwapEstimate(
       if (!fromCoin || !toCoin || !fromAmount || fromAmount <= 0) {
         return null;
       }
-      return calculateSwapEstimate(fromCoin, toCoin, fromAmount);
+      // Quote from the server - the same pricing the swap is credited at
+      const params = new URLSearchParams({ from: fromCoin, to: toCoin, amount: String(fromAmount) });
+      const response = await fetch(`/api/swap/quote?${params}`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to get a quote');
+      }
+      return data.quote as SwapEstimate;
     },
     enabled: !!fromCoin && !!toCoin && !!fromAmount && fromAmount > 0,
     staleTime: 10 * 1000, // Consider stale after 10 seconds

@@ -3,10 +3,13 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
   formatSwapTransaction,
-  SWAP_FEE_PERCENTAGE,
   MINIMUM_SWAP_USD,
 } from '@/lib/binance/swap';
 import { canUserTransact, recordTransaction } from '@/lib/kyc/utils';
+import { getServerSwapQuote } from '@/lib/swap/server-quote';
+
+// How far the user's quoted payout may differ from the server's before we ask them to re-review
+const QUOTE_TOLERANCE = 0.01; // 1%
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,23 +64,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ──── KYC CHECK ────
-    // Check if user has KYC approval and is within transaction limits
-    const estimatedValueUsd = estimate.fromValueUsd || amount * (estimate.fromPrice || 0);
-    const kycCheck = await canUserTransact(adminClient, user.id, estimatedValueUsd, 'swap');
-
-    if (!kycCheck.allowed) {
-      return NextResponse.json(
-        {
-          error: kycCheck.reason,
-          requires_kyc: true,
-          current_tier: kycCheck.tier,
-          remaining_limit: kycCheck.remaining_limit,
-        },
-        { status: 403 }
-      );
-    }
-
     // Validate estimate matches request
     if (
       estimate.fromCoin !== fromCoin ||
@@ -90,19 +76,54 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify fee percentage integrity
-    if (Math.abs(estimate.feePercentage - SWAP_FEE_PERCENTAGE) > 0.01) {
+    // ──── SERVER-SIDE PRICING ────
+    // Never trust client prices or payout: recompute the quote from our own price sources
+    const serverEstimate = await getServerSwapQuote(fromCoin, toCoin, amount);
+    if (!serverEstimate) {
       return NextResponse.json(
-        { error: 'Invalid fee percentage' },
-        { status: 400 }
+        { error: 'Prices are temporarily unavailable. Please try again shortly.' },
+        { status: 503 }
+      );
+    }
+    const serverToAmount = serverEstimate.toAmount;
+    const usdValue = serverEstimate.totalUsdValue;
+
+    // The user confirmed the client quote; if the real rate differs by more than the
+    // tolerance (price moved, or the request was altered), make them review the new one
+    const clientToAmount = Number(estimate.toAmount);
+    if (
+      !isFinite(clientToAmount) ||
+      clientToAmount <= 0 ||
+      Math.abs(serverToAmount - clientToAmount) / clientToAmount > QUOTE_TOLERANCE
+    ) {
+      return NextResponse.json(
+        { error: 'The rate has changed. Please review the updated quote and try again.', estimate: serverEstimate },
+        { status: 409 }
       );
     }
 
     // Check minimum swap amount
-    if (estimate.totalUsdValue < MINIMUM_SWAP_USD) {
+    if (usdValue < MINIMUM_SWAP_USD) {
       return NextResponse.json(
         { error: `Minimum swap amount is $${MINIMUM_SWAP_USD} USD` },
         { status: 400 }
+      );
+    }
+
+    // ──── KYC CHECK ────
+    // Check if user has KYC approval and is within transaction limits (server-priced value)
+    const estimatedValueUsd = usdValue;
+    const kycCheck = await canUserTransact(adminClient, user.id, estimatedValueUsd, 'swap');
+
+    if (!kycCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: kycCheck.reason,
+          requires_kyc: true,
+          current_tier: kycCheck.tier,
+          remaining_limit: kycCheck.remaining_limit,
+        },
+        { status: 403 }
       );
     }
 
@@ -176,7 +197,7 @@ export async function POST(request: NextRequest) {
         p_from_token_id: fromToken.id,
         p_to_token_id: toToken.id,
         p_from_amount: amount,
-        p_to_amount: estimate.toAmount,
+        p_to_amount: serverEstimate.toAmount,
       }
     );
 
@@ -202,7 +223,7 @@ export async function POST(request: NextRequest) {
     const newToBalance = swapResult.to_balance;
 
     // Create transaction record with new schema
-    const swapTransaction = formatSwapTransaction(estimate);
+    const swapTransaction = formatSwapTransaction(serverEstimate);
 
     const { data: transaction, error: txError } = await adminClient
       .from('transactions')
@@ -218,7 +239,7 @@ export async function POST(request: NextRequest) {
         // Foreign keys for efficient querying
         swap_from_token_id: fromToken.id,
         swap_to_token_id: toToken.id,
-        notes: `Swapped ${amount} ${fromToken.symbol} to ${estimate.toAmount.toFixed(8)} ${toToken.symbol}`,
+        notes: `Swapped ${amount} ${fromToken.symbol} to ${serverEstimate.toAmount.toFixed(8)} ${toToken.symbol}`,
         completed_at: new Date().toISOString(),
       })
       .select()
@@ -252,7 +273,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       transaction,
-      estimate,
+      estimate: serverEstimate,
       newBalances: {
         [fromCoin]: newFromBalance,
         [toCoin]: newToBalance,
