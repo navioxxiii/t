@@ -110,13 +110,16 @@ export function IOSInstallGuide({
             <Button onClick={() => onOpenChange(false)} className="w-full">
               Got it!
             </Button>
-            <Button
-              onClick={handleDontShowAgain}
-              variant="ghost"
-              className="w-full text-text-tertiary hover:text-text-secondary"
-            >
-              Don&apos;t show this again
-            </Button>
+            {/* Only when opened from the banner - not when the user asked for it in Settings */}
+            {onDismissPermanently && (
+              <Button
+                onClick={handleDontShowAgain}
+                variant="ghost"
+                className="w-full text-text-tertiary hover:text-text-secondary"
+              >
+                Don&apos;t show this again
+              </Button>
+            )}
           </div>
         </div>
       </ResponsiveDialogContent>

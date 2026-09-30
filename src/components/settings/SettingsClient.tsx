@@ -13,6 +13,7 @@ import {
   Calendar,
   ShieldCheck,
   Loader2,
+  Download,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,8 @@ import { ProfileSettingsDialog } from './ProfileSettingsDialog';
 import { SecuritySettingsDialog } from './SecuritySettingsDialog';
 import { NotificationSettingsDialog } from './NotificationSettingsDialog';
 import { AppearanceSettingsDialog } from './AppearanceSettingsDialog';
+import { IOSInstallGuide } from '@/components/pwa/IOSInstallGuide';
+import { promptInstall, useInstallPlatform } from '@/lib/pwa/install';
 import { branding } from '@/config/branding';
 
 interface SettingsItemProps {
@@ -78,6 +81,9 @@ export default function SettingsClient() {
   const [securityDialogOpen, setSecurityDialogOpen] = useState(false);
   const [notificationDialogOpen, setNotificationDialogOpen] = useState(false);
   const [appearanceDialogOpen, setAppearanceDialogOpen] = useState(false);
+  const [iosInstallOpen, setIosInstallOpen] = useState(false);
+  // Only offered where this browser can actually install; ignores the banner's pacing
+  const installPlatform = useInstallPlatform();
   const [currentName, setCurrentName] = useState(profile?.full_name || 'User');
 
   const handleLogout = async () => {
@@ -217,6 +223,14 @@ export default function SettingsClient() {
               value="Theme and display settings"
               onClick={() => setAppearanceDialogOpen(true)}
             />
+            {installPlatform && (
+              <SettingsItem
+                icon={Download}
+                label="Install app"
+                value={`Add ${branding.name.short} to your home screen`}
+                onClick={() => (installPlatform === 'ios' ? setIosInstallOpen(true) : promptInstall())}
+              />
+            )}
           </div>
         </Card>
 
@@ -261,6 +275,8 @@ export default function SettingsClient() {
         open={appearanceDialogOpen}
         onOpenChange={setAppearanceDialogOpen}
       />
+
+      <IOSInstallGuide open={iosInstallOpen} onOpenChange={setIosInstallOpen} />
     </div>
   );
 }
