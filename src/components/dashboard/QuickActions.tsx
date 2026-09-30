@@ -13,6 +13,9 @@ import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/utils/haptics';
 import { EARN_ENABLED, COPY_TRADE_ENABLED } from '@/lib/feature-flags';
 
+// Buy isn't live yet - flip to show it (with its "Soon" badge removed) at launch
+const BUY_ENABLED = false;
+
 interface QuickAction {
   id: string;
   label: string;
@@ -20,7 +23,6 @@ interface QuickAction {
   onClick: () => void;
   disabled?: boolean;
   badge?: string;
-  opacity: string;
 }
 
 interface QuickActionsProps {
@@ -40,29 +42,27 @@ export function QuickActions({
     {
       id: 'send',
       label: 'Send',
-      icon: <ArrowUpRight className="h-7 w-7" />,
+      icon: <ArrowUpRight className="h-5 w-5" />,
       onClick: () => {
         haptics.selection();
         onSend?.();
       },
       disabled: !onSend,
-      opacity: '10',
     },
     {
       id: 'receive',
       label: 'Receive',
-      icon: <ArrowDownLeft className="h-7 w-7" />,
+      icon: <ArrowDownLeft className="h-5 w-5" />,
       onClick: () => {
         haptics.selection();
         onReceive?.();
       },
       disabled: !onReceive,
-      opacity: '15',
     },
     {
       id: 'swap',
       label: 'Swap',
-      icon: <ArrowLeftRight className="h-7 w-7" />,
+      icon: <ArrowLeftRight className="h-5 w-5" />,
       onClick: () => {
         haptics.selection();
         if (onSwap) {
@@ -71,36 +71,32 @@ export function QuickActions({
           router.push('/swap');
         }
       },
-      opacity: '20',
     },
     {
       id: 'earn',
       label: 'Earn',
-      icon: <TrendingUp className="h-7 w-7" />,
+      icon: <TrendingUp className="h-5 w-5" />,
       onClick: () => {
         haptics.selection();
         router.push('/earn');
       },
-      opacity: '10',
     },
     {
       id: 'copy-trade',
       label: 'Copy Trade',
-      icon: <Users2 className="h-7 w-7" />,
+      icon: <Users2 className="h-5 w-5" />,
       onClick: () => {
         haptics.selection();
         router.push('/copy-trade');
       },
-      opacity: '15',
     },
     {
       id: 'buy',
       label: 'Buy',
-      icon: <DollarSign className="h-7 w-7" />,
+      icon: <DollarSign className="h-5 w-5" />,
       onClick: () => {},
       disabled: true,
       badge: 'Soon',
-      opacity: '20',
     },
   ];
 
@@ -108,45 +104,18 @@ export function QuickActions({
   const actions = allActions.filter(action => {
     if (action.id === 'earn') return EARN_ENABLED;
     if (action.id === 'copy-trade') return COPY_TRADE_ENABLED;
+    if (action.id === 'buy') return BUY_ENABLED;
     return true;
   });
 
   return (
     <div className="w-full px-4 pb-4 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-4xl">
-        {/* Mobile & Tablet: Horizontal scroll */}
-        <div className="lg:hidden">
-          <div className="no-scrollbar -mx-4 flex gap-4 overflow-x-auto px-4 pb-2 snap-x snap-mandatory">
-            {actions.map((action) => (
-              <QuickActionButton
-                key={action.id}
-                {...action}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Desktop: Grid layout */}
-        <div className="hidden lg:grid lg:grid-cols-6 lg:gap-4">
-          {actions.map((action) => (
-            <QuickActionButton
-              key={action.id}
-              {...action}
-            />
-          ))}
-        </div>
+      {/* Every action in view: fills the row on phones, centered from md up */}
+      <div className="mx-auto flex max-w-4xl justify-between md:justify-center md:gap-10">
+        {actions.map((action) => (
+          <QuickActionButton key={action.id} {...action} />
+        ))}
       </div>
-
-      {/* Hide scrollbar CSS */}
-      <style jsx>{`
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
     </div>
   );
 }
@@ -157,40 +126,33 @@ function QuickActionButton({
   onClick,
   disabled,
   badge,
-  opacity,
 }: QuickAction) {
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'relative flex min-w-[90px] flex-shrink-0 snap-start flex-col items-center gap-2.5 rounded-2xl p-4 transition-all',
-        'bg-bg-secondary hover:bg-bg-tertiary active:scale-95',
-        'lg:min-w-0',
+        'group relative flex min-w-0 flex-1 flex-col items-center gap-2 py-1 transition-transform md:flex-none',
+        'active:scale-95',
         disabled && 'opacity-60 cursor-not-allowed'
       )}
     >
-      {/* Icon container with brand color + opacity (Bybit/Binance style) */}
-      <div
+      <span
         className={cn(
-          'flex h-14 w-14 items-center justify-center rounded-full transition-transform',
-          `bg-brand-primary/${opacity}`,
-          !disabled && 'hover:scale-110'
+          'flex h-12 w-12 items-center justify-center rounded-full bg-brand-primary/15 text-brand-primary transition-colors',
+          !disabled && 'group-hover:bg-brand-primary/25'
         )}
       >
-        <div className="text-brand-primary">
-          {icon}
-        </div>
-      </div>
+        {icon}
+      </span>
 
-      {/* Label */}
-      <span className="text-xs font-semibold text-text-primary text-center leading-tight max-w-[80px]">
+      <span className="whitespace-nowrap text-[11px] font-semibold leading-tight text-text-primary md:text-xs">
         {label}
       </span>
 
-      {/* Badge */}
       {badge && (
-        <span className="absolute right-2 top-2 rounded-full bg-brand-primary px-2 py-0.5 text-[10px] font-bold text-white shadow-md">
+        <span className="absolute -top-1 left-1/2 ml-2 rounded-full bg-brand-primary px-1.5 py-0.5 text-[9px] font-bold text-bg-primary">
           {badge}
         </span>
       )}
