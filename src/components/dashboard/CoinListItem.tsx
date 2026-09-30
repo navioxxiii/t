@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Eye, EyeOff, Lock } from "lucide-react";
-import { formatCrypto, formatUSD, getChangeColor } from "@/lib/utils/currency";
+import { formatCrypto, formatPrice, formatUSD, getChangeColor } from "@/lib/utils/currency";
 import type { CoinPrice } from "@/lib/prices/prices-client";
 import type { BaseToken } from "@/types/balance";
 import { getTokenIcon } from "@/config/token-icons";
@@ -149,12 +149,15 @@ export function CoinListItem({
             <div className="font-semibold text-base leading-tight text-text-primary">
               {formatUSD(usdValue)}
             </div>
-            {priceChange !== 0 && (
-              <div className={`mt-1 text-xs font-semibold ${changeColor}`}>
+            {/* Unit price paired with its 24h change */}
+            <div className="mt-1 text-xs whitespace-nowrap">
+              <span className="text-text-secondary">{formatPrice(price.current_price)}</span>
+              <span className="text-text-tertiary"> · </span>
+              <span className={`font-semibold ${changeColor}`}>
                 {priceChange > 0 ? "+" : ""}
                 {priceChange.toFixed(2)}%
-              </div>
-            )}
+              </span>
+            </div>
           </>
         )}
       </div>
