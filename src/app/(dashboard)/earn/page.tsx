@@ -1,116 +1,123 @@
+/**
+ * Earn Page
+ * Browse fixed-term vaults and manage earn positions
+ */
+
 'use client';
 
-import { useEffect, useState } from 'react';
-import { TrendingUp, PiggyBank } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { EarnTabs } from '@/components/earn/EarnTabs';
+import { Suspense } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { PiggyBank, ShieldCheck } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { EarnTabs, type EarnTabValue } from '@/components/earn/EarnTabs';
 import { VaultsGrid } from '@/components/earn/VaultsGrid';
 import { PortfolioContent } from '@/components/earn/PortfolioContent';
+import { useEarnPositions, useEarnVaults } from '@/hooks/useEarn';
 
-interface Vault {
-  id: string;
-  title: string;
-  subtitle: string;
-  apy_percent: number;
-  duration_months: number;
-  min_amount: number;
-  max_amount: number | null;
-  total_capacity: number | null;
-  risk_level: 'low' | 'medium' | 'high';
-  availability: {
-    isFull: boolean;
-    fillPercentage: number;
-    remainingCapacity: number | null;
+function EarnContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const vaultsQuery = useEarnVaults();
+  const positionsQuery = useEarnPositions();
+
+  const vaults = vaultsQuery.data ?? [];
+  const grouped = positionsQuery.data?.grouped;
+  const openPositionsCount = grouped ? grouped.active.length + grouped.matured.length : 0;
+  const hasAnyPosition = grouped
+    ? openPositionsCount + grouped.withdrawn.length > 0
+    : false;
+  const maxApy = vaults.length > 0 ? Math.max(...vaults.map((v) => v.apy_percent)) : null;
+
+  // Tab lives in the URL; without one, send new users to the vaults list
+  const tabParam = searchParams.get('tab');
+  const activeTab: EarnTabValue =
+    tabParam === 'vaults' || tabParam === 'portfolio'
+      ? tabParam
+      : positionsQuery.isSuccess && !hasAnyPosition
+      ? 'vaults'
+      : 'portfolio';
+
+  const setTab = (tab: EarnTabValue) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', tab);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
-}
-
-export default function EarnPage() {
-  const [vaults, setVaults] = useState<Vault[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchVaults();
-  }, []);
-
-  const fetchVaults = async () => {
-    try {
-      const response = await fetch('/api/earn/vaults');
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch vaults');
-      }
-
-      setVaults(data.vaults || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Find max APY for the quick stat
-  const maxAPY = vaults.length > 0
-    ? Math.max(...vaults.map(v => v.apy_percent))
-    : 20;
 
   return (
     <div className="h-full p-4 pt-8 pb-24">
       <div className="mx-auto max-w-4xl space-y-6">
         {/* Header */}
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <PiggyBank className="h-5 w-5 md:h-6 md:w-6 text-brand-primary" />
-            <h1 className="text-xl md:text-2xl font-bold">Earn</h1>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <PiggyBank className="h-5 w-5 md:h-6 md:w-6 text-brand-primary" />
+              <h1 className="text-xl md:text-2xl font-bold">Earn</h1>
+            </div>
+            {maxApy !== null && (
+              <span className="rounded-full border border-brand-primary/30 bg-brand-primary/10 px-3 py-1 text-xs md:text-sm font-semibold text-brand-primary">
+                Up to {maxApy}% APY
+              </span>
+            )}
           </div>
           <p className="text-xs md:text-sm text-text-secondary">
-            Lock your crypto and earn competitive yields with fixed-term vaults
+            Lock USDT in fixed-term vaults and earn a fixed APY, paid out with your principal at maturity
           </p>
         </div>
 
-        {/* Quick Stat */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-brand-primary/10 p-2">
-                <TrendingUp className="h-5 w-5 text-brand-primary" />
-              </div>
-              <div>
-                <p className="text-xs text-text-secondary">Up to</p>
-                <p className="text-base md:text-lg font-bold text-brand-primary">{maxAPY}% APY</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Tabbed Interface */}
         <EarnTabs
+          value={activeTab}
+          onValueChange={setTab}
+          vaultsCount={vaults.length}
+          portfolioCount={openPositionsCount}
           vaultsContent={
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm md:text-base font-semibold">Available Vaults</h2>
-                <p className="text-sm text-text-secondary">
-                  {loading ? '...' : `${vaults.length} ${vaults.length === 1 ? 'vault' : 'vaults'}`}
+              <VaultsGrid
+                vaults={vaults}
+                loading={vaultsQuery.isPending}
+                error={vaultsQuery.isError ? vaultsQuery.error.message : null}
+                onRetry={() => vaultsQuery.refetch()}
+              />
+
+              <div className="flex gap-3 rounded-lg border border-bg-tertiary p-4">
+                <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5 text-text-tertiary" />
+                <p className="text-xs text-text-tertiary">
+                  Funds are locked for the full term and can&apos;t be withdrawn early. The APY is
+                  fixed when you invest; principal and profit become claimable on the maturity date.
                 </p>
               </div>
-
-              <VaultsGrid vaults={vaults} loading={loading} error={error} />
-
-              {/* Disclaimer */}
-              <Card className="border-bg-tertiary/50">
-                <CardContent className="p-4 text-xs text-text-tertiary">
-                  <p>
-                    <strong>Important:</strong> Funds are locked for the specified duration and cannot be withdrawn early.
-                    APY is fixed and guaranteed for the lock period. Past performance does not guarantee future results.
-                  </p>
-                </CardContent>
-              </Card>
             </div>
           }
-          portfolioContent={<PortfolioContent />}
+          portfolioContent={
+            <PortfolioContent
+              data={positionsQuery.data}
+              loading={positionsQuery.isPending}
+              error={positionsQuery.isError ? positionsQuery.error.message : null}
+              onRetry={() => positionsQuery.refetch()}
+              onBrowseVaults={() => setTab('vaults')}
+            />
+          }
         />
       </div>
     </div>
+  );
+}
+
+export default function EarnPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-full p-4 pt-8 pb-24">
+          <div className="mx-auto max-w-4xl space-y-6">
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </div>
+      }
+    >
+      <EarnContent />
+    </Suspense>
   );
 }
