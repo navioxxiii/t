@@ -101,6 +101,10 @@ export interface PortfolioSummary {
   total_active_positions: number;
   total_invested: number;
   total_current_profit: number;
+  /** Active principal + accrued profit + claimable payouts */
+  total_value: number;
+  /** Principal + profit of matured, unclaimed positions */
+  total_claimable: number;
   total_matured_positions: number;
   total_lifetime_earnings: number;
 }

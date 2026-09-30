@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { EARN_ENABLED } from '@/lib/feature-flags';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { roundUsd } from '@/lib/earn/calc';
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,17 +62,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate position status
-    if (position.status !== 'matured') {
+    // Claimable once matured - either marked by the cron or past matures_at
+    const now = new Date();
+    const isMatured =
+      position.status === 'matured' ||
+      (position.status === 'active' && new Date(position.matures_at) <= now);
+
+    if (position.status === 'withdrawn' || position.withdrawn_at) {
       return NextResponse.json(
-        { error: 'Position is not matured yet' },
-        { status: 400 }
+        { error: 'Position already withdrawn' },
+        { status: 409 }
       );
     }
 
-    if (position.withdrawn_at) {
+    if (!isMatured) {
       return NextResponse.json(
-        { error: 'Position already withdrawn' },
+        { error: 'Position is not matured yet' },
         { status: 400 }
       );
     }
@@ -93,13 +99,44 @@ export async function POST(request: NextRequest) {
     const USDT_BASE_TOKEN_ID = usdtToken.id;
 
     // Calculate payout amount: principal + profit
-    const principal = Number(position.amount_usdt);
-    const profit = Number(position.total_profit_usdt);
-    const totalPayout = principal + profit;
+    // Rounded to cents - older positions stored unrounded profit
+    const principal = roundUsd(Number(position.amount_usdt));
+    const profit = roundUsd(Number(position.total_profit_usdt));
+    const totalPayout = roundUsd(principal + profit);
 
-    // ──── TRANSACTION: Credit balance + Mark position withdrawn ────
+    // ──── TRANSACTION: Mark position withdrawn + Credit balance ────
 
-    // 1. Credit user's USDT balance
+    // 1. Atomically claim the position first - the conditional update only matches
+    //    while it's still unclaimed, so concurrent requests can't both pay out
+    const { data: claimedRows, error: markWithdrawnError } = await supabase
+      .from('user_earn_positions')
+      .update({
+        status: 'withdrawn',
+        withdrawn_at: now.toISOString(),
+      })
+      .eq('id', positionId)
+      .eq('user_id', user.id)
+      .in('status', ['active', 'matured'])
+      .is('withdrawn_at', null)
+      .lte('matures_at', now.toISOString())
+      .select('id');
+
+    if (markWithdrawnError) {
+      console.error('Failed to update position status:', markWithdrawnError);
+      return NextResponse.json(
+        { error: 'Failed to process withdrawal' },
+        { status: 500 }
+      );
+    }
+
+    if (!claimedRows || claimedRows.length === 0) {
+      return NextResponse.json(
+        { error: 'Position already claimed' },
+        { status: 409 }
+      );
+    }
+
+    // 2. Credit user's USDT balance
     const { error: creditError } = await supabase.rpc('update_user_balance', {
       p_user_id: user.id,
       p_base_token_id: USDT_BASE_TOKEN_ID,
@@ -108,34 +145,16 @@ export async function POST(request: NextRequest) {
     });
 
     if (creditError) {
+      // Rollback: make the position claimable again
+      await supabase
+        .from('user_earn_positions')
+        .update({ status: 'matured', withdrawn_at: null })
+        .eq('id', positionId)
+        .eq('user_id', user.id);
+
       console.error('Failed to credit balance:', creditError);
       return NextResponse.json(
         { error: 'Failed to process withdrawal' },
-        { status: 500 }
-      );
-    }
-
-    // 2. Mark position as withdrawn
-    const { error: markWithdrawnError } = await supabase
-      .from('user_earn_positions')
-      .update({
-        status: 'withdrawn',
-        withdrawn_at: new Date().toISOString(),
-      })
-      .eq('id', positionId);
-
-    if (markWithdrawnError) {
-      // Rollback: Debit balance back
-      await supabase.rpc('update_user_balance', {
-        p_user_id: user.id,
-        p_base_token_id: USDT_BASE_TOKEN_ID,
-        p_amount: totalPayout,
-        p_operation: 'debit',
-      });
-
-      console.error('Failed to update position status:', markWithdrawnError);
-      return NextResponse.json(
-        { error: 'Failed to mark position as withdrawn' },
         { status: 500 }
       );
     }
