@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowDown, Info, Loader2, AlertCircle, Zap, Lock } from "lucide-react";
+import { ArrowDown, Loader2, AlertCircle, Lock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -26,12 +26,9 @@ import { useCoinPrices } from "@/hooks/useCoinPrices";
 import { useSwap, useSwapEstimate } from "@/hooks/useSwap";
 import { SWAP_FEE_PERCENTAGE, MINIMUM_SWAP_USD } from "@/lib/binance/swap";
 import Image from "next/image";
-import { formatCrypto, formatUSD } from "@/lib/utils/currency";
+import { formatCrypto, formatUSD, parseAmountInput } from "@/lib/utils/currency";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { haptics } from "@/lib/utils/haptics";
-import { Label } from "../ui/label";
-import { Badge } from "../ui/badge";
 import type { UserBalance } from "@/types/balance";
 
 export default function SwapClient() {
@@ -83,21 +80,16 @@ export default function SwapClient() {
   // Sort balances for dropdowns
   // "From" dropdown: Sort by USD value (highest balance first)
   // "To" dropdown: Sort alphabetically (easier to find target coin)
-  const fromBalancesSorted = useMemo(() => {
-    if (!balances) return [];
-    return sortBalancesByUsdValue(balances);
-  }, [balances, pricesMap]);
-
-  const toBalancesSorted = useMemo(() => {
-    if (!balances) return [];
-    return sortBalancesAlphabetically(balances);
-  }, [balances]);
+  const fromBalancesSorted = balances ? sortBalancesByUsdValue(balances) : [];
+  const toBalancesSorted = balances ? sortBalancesAlphabetically(balances) : [];
 
   // Get real-time swap estimate
-  const parsedAmount = fromAmount ? parseFloat(fromAmount) : undefined;
+  const parsedAmount = fromAmount ? parseAmountInput(fromAmount) ?? undefined : undefined;
   const {
     data: estimate,
     isLoading: estimateLoading,
+    error: estimateError,
+    isFetching: estimateFetching,
     refetch,
   } = useSwapEstimate(fromCoin || undefined, toCoin || undefined, parsedAmount);
 
@@ -111,19 +103,25 @@ export default function SwapClient() {
     setFromAmount("");
   };
 
-  const fromUsdValue =
-    fromAmount && fromPrice
-      ? parseFloat(fromAmount) * fromPrice.current_price
-      : 0;
+  // Prefer the server quote's price; fall back to the wallet price while it loads
+  const fromUsdValue = parsedAmount
+    ? estimate
+      ? estimate.totalUsdValue
+      : fromPrice
+        ? parsedAmount * fromPrice.current_price
+        : 0
+    : 0;
 
   const handleMaxAmount = () => {
     if (!fromBalance) return;
-    // Use available balance (not total balance)
-    const available = parseFloat(fromBalance.available_balance);
-    // Account for the swap fee so user can swap their full balance
-    // If fee is 2.5%, max swappable = available / 1.025
-    const maxAfterFee = available / (1 + SWAP_FEE_PERCENTAGE / 100);
-    setFromAmount(maxAfterFee.toFixed(8));
+    // Available balance (not total). The fee is taken from what you receive,
+    // so the whole available balance can be swapped
+    // Round down (never above what's available) to a sensible precision
+    const available = Number(fromBalance.available_balance) || 0;
+    const decimals = fromBalance.token.is_stablecoin ? 2 : 8;
+    const factor = 10 ** decimals;
+    const max = Math.floor(available * factor) / factor;
+    setFromAmount(max.toFixed(decimals).replace(/\.?0+$/, ''));
   };
 
   const handleReviewSwap = async () => {
@@ -162,6 +160,8 @@ export default function SwapClient() {
       const errorMessage =
         error instanceof Error ? error.message : "Swap failed";
       toast.error(errorMessage);
+      // e.g. the rate moved: show the fresh quote so the user can confirm again
+      await refetch();
     }
   };
 
@@ -261,11 +261,13 @@ export default function SwapClient() {
             </Select>
             {/* Amount Input */}
             <Input
-              type="number"
+              inputMode="decimal"
+              autoComplete="off"
               placeholder="0.00"
+              aria-label="Amount to swap"
               value={fromAmount}
               onChange={(e) => setFromAmount(e.target.value)}
-              className="flex-1 border-0 bg-transparent text-right text-xl font-semibold h-full rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              className="flex-1 min-w-0 border-0 bg-transparent text-right text-xl font-semibold h-full rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
           {fromUsdValue > 0 && (
@@ -344,11 +346,11 @@ export default function SwapClient() {
               {estimateLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : estimate && isFinite(estimate.toAmount) && estimate.toAmount > 0 ? (
-                estimate.toAmount.toFixed(8)
-              ) : fromAmount && parsedAmount && parsedAmount > 0 && fromCoin && toCoin ? (
-                <span className="text-action-red text-sm">Error</span>
+                <span className="truncate">{formatCrypto(estimate.toAmount, toCoin)}</span>
+              ) : estimateError ? (
+                <span className="text-text-tertiary text-sm">Quote unavailable</span>
               ) : (
-                <span className="text-text-tertiary">0.00000000</span>
+                <span className="text-text-tertiary">0.00</span>
               )}
             </div>
           </div>
@@ -395,61 +397,40 @@ export default function SwapClient() {
         </Alert>
       )}
 
+      {/* Quote failed (e.g. price source down) */}
+      {estimateError && !estimate && !sameTokenSwap && (
+        <Alert className="mt-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between gap-3">
+            <span>{estimateError.message}</span>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Swap Details Card */}
       {estimate && !insufficientBalance && !belowMinimum && !sameTokenSwap && (
-        <Card className="mt-4 p-5 border shadow-sm">
-          <div className="space-y-4">
-            {/* Exchange Rate */}
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Exchange Rate</span>
-              <span className="font-medium font-mono">
-                1 {fromCoin} ≈ {estimate.rate.toFixed(8)} {toCoin}
+        <Card className="mt-4 p-5 gap-0 border shadow-sm">
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between gap-3">
+              <span className="text-muted-foreground">Rate</span>
+              <span className="font-medium text-right">
+                1 {fromCoin} ≈ {formatCrypto(estimate.rate, toCoin)} {toCoin}
               </span>
             </div>
-
-            {/* Network Fee */}
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">
-                Fee ({SWAP_FEE_PERCENTAGE}%)
-              </span>
-              <span className="font-medium">
-                {formatUSD(estimate.feeAmount)}
-              </span>
+            <div className="flex justify-between gap-3">
+              <span className="text-muted-foreground">Fee ({SWAP_FEE_PERCENTAGE}%)</span>
+              <span className="font-medium">{formatUSD(estimate.feeAmount)}</span>
             </div>
-
-            {/* Priority Indicator */}
-            <div className="flex items-center justify-between pt-4 border-t border-border/50">
-              <span className="text-sm text-muted-foreground">Speed</span>
-
-              {estimate.isHighPriority ? (
-                <Badge variant="success" className="gap-1.5">
-                  <Zap className="w-3.5 h-3.5 animate-pulse" />
-                  High Priority
-                </Badge>
-              ) : (
-                <Badge variant="secondary" className="gap-2 font-medium">
-                  <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                  Normal
-                </Badge>
-              )}
+            <div className="flex items-center justify-between gap-3 pt-3 border-t border-border/50 text-xs text-muted-foreground">
+              <span>Quote refreshes every 30 seconds</span>
+              <RefreshCw className={`h-3.5 w-3.5 ${estimateFetching ? "animate-spin" : ""}`} aria-hidden />
             </div>
           </div>
         </Card>
       )}
-
-      {/* Info Card */}
-      {/* <Card className="mt-4 p-4 bg-muted/50">
-          <div className="flex gap-2">
-            <Info className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-            <div className="text-sm text-muted-foreground">
-              <p className="font-medium mb-1">Instant Swap</p>
-              <p>
-                Swaps are executed instantly within your wallet. A {SWAP_FEE_PERCENTAGE}% fee
-                applies. Minimum swap amount is ${MINIMUM_SWAP_USD} USD.
-              </p>
-            </div>
-          </div>
-        </Card> */}
 
       {/* Swap Button */}
       <Button
@@ -503,7 +484,7 @@ export default function SwapClient() {
                     className="rounded-full"
                   />
                   <span className="font-semibold">
-                    {estimate.fromAmount} {fromCoin}
+                    {formatCrypto(estimate.fromAmount, fromCoin)} {fromCoin}
                   </span>
                 </div>
               </div>
@@ -522,7 +503,7 @@ export default function SwapClient() {
                     className="rounded-full"
                   />
                   <span className="font-semibold">
-                    {estimate.toAmount.toFixed(8)} {toCoin}
+                    {formatCrypto(estimate.toAmount, toCoin)} {toCoin}
                   </span>
                 </div>
               </div>
@@ -531,7 +512,7 @@ export default function SwapClient() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Rate</span>
                   <span>
-                    1 {fromCoin} = {estimate.rate.toFixed(8)} {toCoin}
+                    1 {fromCoin} ≈ {formatCrypto(estimate.rate, toCoin)} {toCoin}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -540,6 +521,13 @@ export default function SwapClient() {
                   </span>
                   <span>{formatUSD(estimate.feeAmount)}</span>
                 </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Value</span>
+                  <span>{formatUSD(estimate.totalUsdValue)}</span>
+                </div>
+                <p className="pt-1 text-xs text-muted-foreground">
+                  If the price moves more than 1% before you confirm, you&apos;ll be shown the new rate first.
+                </p>
               </div>
             </div>
           )}
