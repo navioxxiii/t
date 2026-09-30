@@ -11,6 +11,12 @@ import { Badge } from '@/components/ui/badge';
 import type { Transaction } from '@/hooks/useTransactions';
 import { getTokenIcon } from '@/config/token-icons';
 import Image from 'next/image';
+import { formatCrypto } from '@/lib/utils/currency';
+
+// Amounts arrive as raw strings/numbers (e.g. "100.66666666666667") - format like the detail drawer
+function formatAmount(value: string | number | null | undefined, symbol: string): string {
+  return formatCrypto(Number(value) || 0, symbol);
+}
 
 interface TransactionItemProps {
   transaction: Transaction;
@@ -183,17 +189,17 @@ export function TransactionItem({ transaction, onClick }: TransactionItemProps) 
           <div className="text-right shrink-0">
             {/* Received token (emphasized, positive) */}
             <p className="text-base md:text-lg font-semibold text-green-500">
-              +{transaction.swap_to_amount ?
-                (typeof transaction.swap_to_amount === 'number' ? transaction.swap_to_amount.toFixed(8) : transaction.swap_to_amount)
-                : '0.00000000'}
+              +{formatAmount(transaction.swap_to_amount, transaction.swap_to_coin || '')}
             </p>
             <p className="text-xs md:text-sm text-muted-foreground">{transaction.swap_to_coin || 'N/A'}</p>
 
             {/* Sent token (muted, negative) */}
             <p className="text-xs md:text-sm text-muted-foreground/60 mt-1">
-              -{transaction.swap_from_amount ?
-                (typeof transaction.swap_from_amount === 'number' ? transaction.swap_from_amount.toFixed(8) : transaction.swap_from_amount)
-                : transaction.amount} {transaction.swap_from_coin || transaction.coin_symbol}
+              -{formatAmount(
+                transaction.swap_from_amount ?? transaction.amount,
+                transaction.swap_from_coin || transaction.coin_symbol
+              )}{' '}
+              {transaction.swap_from_coin || transaction.coin_symbol}
             </p>
           </div>
         </div>
@@ -276,12 +282,12 @@ export function TransactionItem({ transaction, onClick }: TransactionItemProps) 
                 isEarnInvest ? 'text-purple-500' : 'text-green-500'
               }`}
             >
-              {isEarnInvest ? '-' : '+'}{transaction.amount}
+              {isEarnInvest ? '-' : '+'}{formatAmount(transaction.amount, 'USDT')}
             </p>
             <p className="text-xs md:text-sm text-muted-foreground">USDT</p>
             {isEarnClaim && metadata?.profit && (
               <p className="text-xs md:text-sm text-green-500 mt-0.5">
-                +{metadata.profit} profit
+                +{formatAmount(metadata.profit, 'USDT')} profit
               </p>
             )}
           </div>
@@ -361,12 +367,18 @@ export function TransactionItem({ transaction, onClick }: TransactionItemProps) 
                 isCopyTradeStart ? 'text-blue-500' : 'text-green-500'
               }`}
             >
-              {isCopyTradeStart ? '-' : '+'}{transaction.amount}
+              {isCopyTradeStart ? '-' : '+'}{formatAmount(transaction.amount, 'USDT')}
             </p>
             <p className="text-xs md:text-sm text-muted-foreground">USDT</p>
             {isCopyTradeStop && metadata && 'user_profit_after_fee' in metadata && metadata.user_profit_after_fee && (
-              <p className="text-xs md:text-sm text-green-500 mt-0.5">
-                +{metadata.user_profit_after_fee} profit
+              <p
+                className={`text-xs md:text-sm mt-0.5 ${
+                  Number(metadata.user_profit_after_fee) < 0 ? 'text-red-500' : 'text-green-500'
+                }`}
+              >
+                {Number(metadata.user_profit_after_fee) < 0 ? '' : '+'}
+                {formatAmount(metadata.user_profit_after_fee, 'USDT')}{' '}
+                {Number(metadata.user_profit_after_fee) < 0 ? 'loss' : 'profit'}
               </p>
             )}
           </div>
@@ -447,12 +459,12 @@ export function TransactionItem({ transaction, onClick }: TransactionItemProps) 
               isDeposit ? 'text-green-500' : 'text-blue-500'
             }`}
           >
-            {isDeposit ? '+' : '-'}{transaction.amount}
+            {isDeposit ? '+' : '-'}{formatAmount(transaction.amount, transaction.coin_symbol)}
           </p>
           <p className="text-xs md:text-sm text-muted-foreground">{transaction.coin_symbol}</p>
           {transaction.network_fee && parseFloat(transaction.network_fee) > 0 && (
             <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
-              Fee: {transaction.network_fee}
+              Fee: {formatAmount(transaction.network_fee, transaction.coin_symbol)}
             </p>
           )}
         </div>
