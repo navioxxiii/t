@@ -91,7 +91,8 @@ export interface TransactionsResponse {
 export interface TransactionFilters {
   coin?: string; // Legacy: symbol-based filtering
   base_token_id?: number; // NEW: ID-based filtering (preferred)
-  type?: "deposit" | "withdrawal" | "swap";
+  /** One type or several (e.g. both earn types) */
+  type?: Transaction["type"] | Transaction["type"][];
   status?: "pending" | "completed" | "failed" | "cancelled";
   limit?: number;
   offset?: number;
@@ -112,7 +113,9 @@ async function fetchTransactions(
     params.append("coin", filters.coin);
   }
 
-  if (filters.type) params.append("type", filters.type);
+  if (filters.type && filters.type.length > 0) {
+    params.append("type", Array.isArray(filters.type) ? filters.type.join(",") : filters.type);
+  }
   if (filters.status) params.append("status", filters.status);
   if (filters.limit) params.append("limit", filters.limit.toString());
   if (filters.offset) params.append("offset", filters.offset.toString());

@@ -7,6 +7,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+const TRANSACTION_TYPES = [
+  'deposit',
+  'withdrawal',
+  'swap',
+  'earn_invest',
+  'earn_claim',
+  'copy_trade_start',
+  'copy_trade_stop',
+];
+
 export async function GET(request: NextRequest) {
   try {
     // Get authenticated user
@@ -24,7 +34,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const coinSymbol = searchParams.get('coin'); // Legacy: symbol-based filtering
     const baseTokenId = searchParams.get('base_token_id'); // NEW: ID-based filtering (preferred)
-    const type = searchParams.get('type'); // 'deposit' or 'withdrawal'
+    // One type or a comma-separated list, limited to known types
+    const types = (searchParams.get('type') || '')
+      .split(',')
+      .map((t) => t.trim())
+      .filter((t) => TRANSACTION_TYPES.includes(t));
     const status = searchParams.get('status'); // 'pending', 'completed', 'failed', 'cancelled'
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
@@ -102,8 +116,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    if (type) {
-      query = query.eq('type', type);
+    if (types.length === 1) {
+      query = query.eq('type', types[0]);
+    } else if (types.length > 1) {
+      query = query.in('type', types);
     }
 
     if (status) {
@@ -159,7 +175,8 @@ export async function GET(request: NextRequest) {
       // For new code, prefer passing base_token_id directly
       countQuery = countQuery.or(`coin_symbol.eq.${coinSymbol},swap_from_coin.eq.${coinSymbol},swap_to_coin.eq.${coinSymbol}`);
     }
-    if (type) countQuery = countQuery.eq('type', type);
+    if (types.length === 1) countQuery = countQuery.eq('type', types[0]);
+    else if (types.length > 1) countQuery = countQuery.in('type', types);
     if (status) countQuery = countQuery.eq('status', status);
 
     const { count } = await countQuery;
