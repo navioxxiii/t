@@ -5,8 +5,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useTokenStore } from '@/stores/tokenStore';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserPlus, Receipt, TrendingUp, Copy, DollarSign, Undo2, Settings, Unlock, FileText, Wallet } from 'lucide-react';
 import { CreateUserForm } from '@/components/admin/data-management/CreateUserForm';
@@ -25,8 +24,6 @@ type TabValue = 'user' | 'transaction' | 'earn' | 'copy' | 'adjust-balance' | 'r
 
 export default function DataManagementPage() {
   const [activeTab, setActiveTab] = useState<TabValue>('user');
-  const fetchBaseTokens = useTokenStore((state) => state.fetchBaseTokens);
-  useEffect(() => { fetchBaseTokens(); }, [fetchBaseTokens]);
 
   const tabs = [
     {

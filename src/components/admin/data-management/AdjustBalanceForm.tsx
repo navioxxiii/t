@@ -7,7 +7,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useTokenStore } from '@/stores/tokenStore';
+import { useBaseTokens } from '@/stores/tokenStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,7 +29,7 @@ interface AdjustBalanceFormProps {
 }
 
 export function AdjustBalanceForm({ userEmail, onSuccess }: AdjustBalanceFormProps = {}) {
-  const { baseTokens, isLoading: tokensLoading } = useTokenStore();
+  const { baseTokens, isLoading: tokensLoading, error: tokensError } = useBaseTokens();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     user_email: userEmail || '',
@@ -139,7 +139,7 @@ export function AdjustBalanceForm({ userEmail, onSuccess }: AdjustBalanceFormPro
             onValueChange={(value) => setFormData({ ...formData, base_token_code: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder={tokensLoading ? 'Loading tokens...' : 'Select token'} />
+              <SelectValue placeholder={tokensLoading ? 'Loading tokens...' : tokensError ? 'Failed to load tokens' : 'Select token'} />
             </SelectTrigger>
             <SelectContent>
               {baseTokens.map((token) => (

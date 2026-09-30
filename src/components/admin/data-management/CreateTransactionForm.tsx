@@ -6,7 +6,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useTokenStore } from '@/stores/tokenStore';
+import { useBaseTokens } from '@/stores/tokenStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,7 +43,7 @@ interface CreateTransactionFormProps {
 }
 
 export function CreateTransactionForm({ userId, userEmail, onSuccess }: CreateTransactionFormProps = {}) {
-  const { baseTokens, isLoading: tokensLoading } = useTokenStore();
+  const { baseTokens, isLoading: tokensLoading, error: tokensError } = useBaseTokens();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     user_id: userId || '',
@@ -147,7 +147,7 @@ export function CreateTransactionForm({ userId, userEmail, onSuccess }: CreateTr
           <Label htmlFor="coin_symbol">Cryptocurrency *</Label>
           <Select value={formData.coin_symbol} onValueChange={(value) => setFormData({ ...formData, coin_symbol: value })}>
             <SelectTrigger>
-              <SelectValue placeholder={tokensLoading ? 'Loading tokens...' : 'Select a coin'} />
+              <SelectValue placeholder={tokensLoading ? 'Loading tokens...' : tokensError ? 'Failed to load tokens' : 'Select a coin'} />
             </SelectTrigger>
             <SelectContent>
               {baseTokens.map((token) => (

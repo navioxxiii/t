@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Lock } from 'lucide-react';
-import { useTokenStore } from '@/stores/tokenStore';
+import { useBaseTokens } from '@/stores/tokenStore';
 
 interface UnlockBalanceFormProps {
   userEmail?: string;
@@ -20,7 +20,7 @@ interface UnlockBalanceFormProps {
 }
 
 export function UnlockBalanceForm({ userEmail, onSuccess }: UnlockBalanceFormProps = {}) {
-  const { baseTokens, isLoading: tokensLoading } = useTokenStore();
+  const { baseTokens, isLoading: tokensLoading, error: tokensError } = useBaseTokens();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     user_email: userEmail || '',
@@ -83,7 +83,7 @@ export function UnlockBalanceForm({ userEmail, onSuccess }: UnlockBalanceFormPro
           <Label>Token *</Label>
           <Select value={formData.base_token_code} onValueChange={(value) => setFormData({ ...formData, base_token_code: value })}>
             <SelectTrigger>
-              <SelectValue placeholder={tokensLoading ? 'Loading tokens...' : 'Select token'} />
+              <SelectValue placeholder={tokensLoading ? 'Loading tokens...' : tokensError ? 'Failed to load tokens' : 'Select token'} />
             </SelectTrigger>
             <SelectContent>
               {baseTokens.map((token) => (

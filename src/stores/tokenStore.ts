@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { create } from 'zustand';
 import type { BaseToken } from '@/types/balance';
 
@@ -27,3 +28,20 @@ export const useTokenStore = create<TokenState>((set, get) => ({
     }
   },
 }));
+
+/**
+ * Base tokens, loaded on first use. Components don't depend on a parent page
+ * having fetched them; concurrent callers share one request via the store guard.
+ */
+export function useBaseTokens() {
+  const baseTokens = useTokenStore((state) => state.baseTokens);
+  const isLoading = useTokenStore((state) => state.isLoading);
+  const error = useTokenStore((state) => state.error);
+  const fetchBaseTokens = useTokenStore((state) => state.fetchBaseTokens);
+
+  useEffect(() => {
+    fetchBaseTokens();
+  }, [fetchBaseTokens]);
+
+  return { baseTokens, isLoading, error };
+}
