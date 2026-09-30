@@ -8,6 +8,7 @@ import { DashboardHeader } from "@/components/navigation/DashboardHeader";
 import { AppLockWrapper } from "@/components/security/AppLockWrapper";
 import { useAuthStore } from "@/stores/authStore";
 import { useGlobalPresence } from "@/hooks/useGlobalPresence";
+import { openSupportChat, useHideTawkBubble } from "@/components/chat/TawkTo";
 
 export default function DashboardLayoutClient({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((state) => state.user);
@@ -16,9 +17,12 @@ export default function DashboardLayoutClient({ children }: { children: React.Re
   // Track user's online presence for admin visibility
   useGlobalPresence(user?.id ?? null, user?.email ?? undefined, profile?.full_name ?? undefined);
 
+  // Support chat opens from the header button; no floating bubble over the app
+  useHideTawkBubble();
+
   return (
     <div className="min-h-screen flex flex-col relative h-screen-ios">
-      <DashboardHeader onSupportClick={() => window.Tawk_API?.maximize?.()} />
+      <DashboardHeader onSupportClick={openSupportChat} />
       <AppLockWrapper>
         <KYCGate>
           <div className="bg-bg-primary">

@@ -6,6 +6,7 @@
 'use client';
 
 import { MessageCircle } from 'lucide-react';
+import { openSupportChat } from '@/components/chat/TawkTo';
 
 export default function TicketDetailPage() {
   return (
@@ -18,17 +19,13 @@ export default function TicketDetailPage() {
         We&apos;ve upgraded to a better support experience with instant chat and ticketing.
       </p>
       <button
-        onClick={() => {
-          if (typeof window !== 'undefined' && (window as any).Tawk_API) {
-            (window as any).Tawk_API.maximize();
-          }
-        }}
+        onClick={openSupportChat}
         className="bg-brand-primary text-bg-primary px-6 py-3 rounded-lg font-semibold hover:bg-brand-primary/90 transition-colors"
       >
         Open Support Chat
       </button>
       <p className="text-xs text-text-tertiary mt-4">
-        Or use the chat widget in the bottom-right corner
+        Or tap the headset icon at the top of any screen
       </p>
     </div>
   );

@@ -6,6 +6,7 @@
 'use client';
 
 import { MessageCircle } from 'lucide-react';
+import { openSupportChat } from '@/components/chat/TawkTo';
 
 export default function GuestTicketPage() {
   return (
@@ -18,11 +19,7 @@ export default function GuestTicketPage() {
         We&apos;ve upgraded to a better support experience with instant chat and ticketing.
       </p>
       <button
-        onClick={() => {
-          if (typeof window !== 'undefined' && (window as any).Tawk_API) {
-            (window as any).Tawk_API.maximize();
-          }
-        }}
+        onClick={openSupportChat}
         className="bg-brand-primary text-bg-primary px-6 py-3 rounded-lg font-semibold hover:bg-brand-primary/90 transition-colors"
       >
         Open Support Chat

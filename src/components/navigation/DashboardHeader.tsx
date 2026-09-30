@@ -7,13 +7,14 @@
 
 import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { ArrowLeft, MessageCircle, SlidersHorizontal } from 'lucide-react';
+import { ArrowLeft, Headset, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import UserMenu from './UserMenu';
 import { branding } from '@/config/branding';
 import { haptics } from '@/lib/utils/haptics';
 import { cn } from '@/lib/utils';
 import { TokenPreferencesDialog } from '@/components/dashboard/TokenPreferencesDialog';
+import { useTawkUnreadCount } from '@/components/chat/TawkTo';
 
 const routeTitles: Record<string, string> = {
   '/dashboard': branding.name.short,
@@ -36,6 +37,7 @@ const routeParents: Record<string, string> = {};
 export function DashboardHeader({ className, onSupportClick }: DashboardHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const unreadSupport = useTawkUnreadCount();
   const [preferencesOpen, setPreferencesOpen] = useState(false);
 
   // Determine title based on current route
@@ -118,18 +120,24 @@ export function DashboardHeader({ className, onSupportClick }: DashboardHeaderPr
               </Button>
             )}
 
-            {/* Support button - mobile only */}
+            {/* Support chat - the app's only chat entry point (no floating bubble) */}
             {onSupportClick && (
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => {
                   haptics.light();
                   onSupportClick();
                 }}
-                className="md:hidden relative w-10 h-10 rounded-full bg-bg-tertiary hover:bg-brand-primary/10 flex items-center justify-center transition-colors"
-                aria-label="Open support chat"
+                className="relative hover:bg-bg-tertiary"
+                aria-label={unreadSupport > 0 ? 'Contact support (new reply)' : 'Contact support'}
+                title="Contact support"
               >
-                <MessageCircle className="w-5 h-5 text-text-primary" />
-              </button>
+                <Headset className="h-5 w-5" />
+                {unreadSupport > 0 && (
+                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-brand-primary ring-2 ring-bg-secondary" />
+                )}
+              </Button>
             )}
             <UserMenu />
           </div>

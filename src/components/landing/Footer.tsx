@@ -4,6 +4,7 @@ import { Twitter, Github, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 import { branding } from '@/config/branding'
 import Image from 'next/image'
+import { openSupportChat } from '@/components/chat/TawkTo'
 
 export function Footer() {
   const { name, description, social, company } = branding
@@ -98,11 +99,7 @@ export function Footer() {
               </li>
               <li>
                 <button
-                  onClick={() => {
-                    if (typeof window !== 'undefined' && (window as any).Tawk_API) {
-                      (window as any).Tawk_API.maximize();
-                    }
-                  }}
+                  onClick={openSupportChat}
                   className="text-text-secondary hover:text-brand-primary transition-colors text-left"
                 >
                   Support
