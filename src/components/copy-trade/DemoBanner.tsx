@@ -6,6 +6,7 @@
 import { FlaskConical } from 'lucide-react';
 
 export function DemoBanner() {
+  return;
   return (
     <div
       role="note"
