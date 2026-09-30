@@ -3,10 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  User,
   Shield,
   Bell,
-  Palette,
   LogOut,
   ChevronRight,
   Mail,
@@ -14,6 +12,8 @@ import {
   ShieldCheck,
   Loader2,
   Download,
+  Headset,
+  FileText,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,10 +23,12 @@ import { toast } from 'sonner';
 import { ProfileSettingsDialog } from './ProfileSettingsDialog';
 import { SecuritySettingsDialog } from './SecuritySettingsDialog';
 import { NotificationSettingsDialog } from './NotificationSettingsDialog';
-import { AppearanceSettingsDialog } from './AppearanceSettingsDialog';
 import { IOSInstallGuide } from '@/components/pwa/IOSInstallGuide';
 import { promptInstall, useInstallPlatform } from '@/lib/pwa/install';
 import { branding } from '@/config/branding';
+import { TraderAvatar } from '@/components/copy-trade/TraderAvatar';
+import { ConfirmActionDialog } from '@/components/shared/ConfirmActionDialog';
+import { openSupportChat } from '@/components/chat/TawkTo';
 
 interface SettingsItemProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -75,18 +77,20 @@ export default function SettingsClient() {
   const user = useAuthStore((state) => state.user);
   const profile = useAuthStore((state) => state.profile);
   const signOut = useAuthStore((state) => state.signOut);
+  const silentRefreshProfile = useAuthStore((state) => state.silentRefreshProfile);
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [securityDialogOpen, setSecurityDialogOpen] = useState(false);
   const [notificationDialogOpen, setNotificationDialogOpen] = useState(false);
-  const [appearanceDialogOpen, setAppearanceDialogOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [iosInstallOpen, setIosInstallOpen] = useState(false);
   // Only offered where this browser can actually install; ignores the banner's pacing
   const installPlatform = useInstallPlatform();
-  const [currentName, setCurrentName] = useState(profile?.full_name || 'User');
+  const displayName = profile?.full_name || 'User';
 
   const handleLogout = async () => {
+    setLogoutConfirmOpen(false);
     setIsLoggingOut(true);
     try {
       // signOut() already handles redirect via window.location.href
@@ -109,9 +113,18 @@ export default function SettingsClient() {
     }
   };
 
-  const handleProfileUpdate = (newName: string) => {
-    setCurrentName(newName);
+  // Refresh the stored profile so the new values show everywhere, not just here
+  const syncProfile = () => {
+    if (user) void silentRefreshProfile(user.id, user.email);
   };
+
+  const idleMinutes = profile?.security_preferences?.idle_timeout_minutes ?? 5;
+  const securitySummary = idleMinutes === 0 ? 'Auto-lock off' : `Auto-lock after ${idleMinutes} min`;
+
+  const notificationPrefs = profile?.notification_preferences;
+  const notificationSummary = notificationPrefs
+    ? `${Object.values(notificationPrefs).filter(Boolean).length} of ${Object.keys(notificationPrefs).length} email alerts on`
+    : 'Manage notification preferences';
 
   const memberSince = user?.created_at
     ? formatDistanceToNow(new Date(user.created_at), { addSuffix: true })
@@ -151,62 +164,56 @@ export default function SettingsClient() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 pt-6 space-y-6">
-        {/* Profile Section */}
-        <Card>
-          <div className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                <User className="h-8 w-8 text-primary" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-xl font-bold">
-                  {currentName}
-                </h2>
-                <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                  <Mail className="h-3.5 w-3.5" />
-                  {user?.email}
+        {/* Profile - tap to edit */}
+        <Card className="py-0 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setProfileDialogOpen(true)}
+            className="flex w-full items-center gap-4 p-5 text-left transition-colors hover:bg-accent"
+            aria-label="Edit profile"
+          >
+            <TraderAvatar name={displayName} className="h-14 w-14" />
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-lg font-bold">{displayName}</h2>
+              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5 min-w-0">
+                <Mail className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{user?.email}</span>
+              </p>
+              {memberSince && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                  <Calendar className="h-3.5 w-3.5 shrink-0" />
+                  Member {memberSince}
                 </p>
-                {memberSince && (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                    <Calendar className="h-3.5 w-3.5" />
-                    Member {memberSince}
-                  </p>
-                )}
-              </div>
+              )}
             </div>
-          </div>
+            <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+          </button>
         </Card>
 
-        {/* Account Settings */}
-        <Card>
+        {/* Account */}
+        <Card className="py-0 gap-0 overflow-hidden">
           <div className="px-4 py-3 border-b border-border">
             <h3 className="font-semibold">Account</h3>
           </div>
           <div className="divide-y divide-border">
             <SettingsItem
-              icon={User}
-              label="Profile Settings"
-              value="Manage your profile information"
-              onClick={() => setProfileDialogOpen(true)}
-            />
-            <SettingsItem
               icon={ShieldCheck}
               label="Identity Verification"
-              value="KYC status and transaction limits"
+              value="Verification status and transaction limits"
               badge={getKYCStatusBadge()}
               onClick={() => router.push('/settings/kyc')}
             />
             <SettingsItem
               icon={Shield}
               label="Security"
-              value="Password and authentication"
+              value={`PIN, device unlock · ${securitySummary}`}
               onClick={() => setSecurityDialogOpen(true)}
             />
           </div>
         </Card>
 
         {/* Preferences */}
-        <Card>
+        <Card className="py-0 gap-0 overflow-hidden">
           <div className="px-4 py-3 border-b border-border">
             <h3 className="font-semibold">Preferences</h3>
           </div>
@@ -214,14 +221,8 @@ export default function SettingsClient() {
             <SettingsItem
               icon={Bell}
               label="Notifications"
-              value="Manage notification preferences"
+              value={notificationSummary}
               onClick={() => setNotificationDialogOpen(true)}
-            />
-            <SettingsItem
-              icon={Palette}
-              label="Appearance"
-              value="Theme and display settings"
-              onClick={() => setAppearanceDialogOpen(true)}
             />
             {installPlatform && (
               <SettingsItem
@@ -234,13 +235,33 @@ export default function SettingsClient() {
           </div>
         </Card>
 
-        {/* Danger Zone */}
-        <Card>
+        {/* Help & legal */}
+        <Card className="py-0 gap-0 overflow-hidden">
+          <div className="px-4 py-3 border-b border-border">
+            <h3 className="font-semibold">Help &amp; legal</h3>
+          </div>
+          <div className="divide-y divide-border">
+            <SettingsItem
+              icon={Headset}
+              label="Contact support"
+              value="Chat with our team"
+              onClick={openSupportChat}
+            />
+            <SettingsItem
+              icon={FileText}
+              label="Terms of Service"
+              onClick={() => router.push('/terms-of-service')}
+            />
+          </div>
+        </Card>
+
+        {/* Log out */}
+        <Card className="py-0 gap-0 overflow-hidden">
           <div className="divide-y divide-border">
             <SettingsItem
               icon={isLoggingOut ? Loader2 : LogOut}
-              label={isLoggingOut ? "Logging out..." : "Log Out"}
-              onClick={handleLogout}
+              label={isLoggingOut ? 'Logging out...' : 'Log Out'}
+              onClick={() => setLogoutConfirmOpen(true)}
               destructive
             />
           </div>
@@ -256,9 +277,9 @@ export default function SettingsClient() {
       <ProfileSettingsDialog
         open={profileDialogOpen}
         onOpenChange={setProfileDialogOpen}
-        currentName={currentName}
+        currentName={displayName}
         email={user?.email || ''}
-        onSuccess={handleProfileUpdate}
+        onSuccess={syncProfile}
       />
 
       <SecuritySettingsDialog
@@ -268,12 +289,22 @@ export default function SettingsClient() {
 
       <NotificationSettingsDialog
         open={notificationDialogOpen}
-        onOpenChange={setNotificationDialogOpen}
+        onOpenChange={(open) => {
+          setNotificationDialogOpen(open);
+          // The dialog saves via the API but doesn't update the store
+          if (!open) syncProfile();
+        }}
       />
 
-      <AppearanceSettingsDialog
-        open={appearanceDialogOpen}
-        onOpenChange={setAppearanceDialogOpen}
+      <ConfirmActionDialog
+        open={logoutConfirmOpen}
+        onOpenChange={setLogoutConfirmOpen}
+        onConfirm={handleLogout}
+        title={`Log out of ${branding.name.short}?`}
+        description="You'll need your email and password to sign in again."
+        confirmText="Log Out"
+        variant="destructive"
+        loading={isLoggingOut}
       />
 
       <IOSInstallGuide open={iosInstallOpen} onOpenChange={setIosInstallOpen} />
