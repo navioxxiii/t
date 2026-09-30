@@ -13,6 +13,7 @@ import { TransactionDetailDrawer } from '@/components/transactions/TransactionDe
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
 import { Loader2, Clock, XCircle } from 'lucide-react';
+import { useCoinPrices } from '@/hooks/useCoinPrices';
 import { isToday, isYesterday, isWithinInterval, subDays, format, startOfMonth } from 'date-fns';
 
 interface CoinTransactionListProps {
@@ -99,6 +100,16 @@ export function CoinTransactionList({
   // Flatten all pages into a single array
   const transactions = data?.pages.flatMap((page) => page.transactions) ?? [];
 
+  // Prices for the rows' ≈ USD line (swaps can involve a second coin)
+  const symbols = Array.from(
+    new Set(
+      transactions
+        .map((tx) => (tx.type === 'swap' ? tx.swap_to_coin : tx.coin_symbol))
+        .filter((s): s is string => Boolean(s))
+    )
+  );
+  const { data: prices } = useCoinPrices(symbols);
+
   // Group transactions by date
   const groupedTransactions = groupTransactionsByDate(transactions);
 
@@ -171,6 +182,7 @@ export function CoinTransactionList({
                   key={transaction.id}
                   transaction={transaction}
                   onClick={() => handleTransactionClick(transaction)}
+                  prices={prices}
                 />
               ))}
             </div>

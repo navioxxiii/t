@@ -14,11 +14,18 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2, Clock, XCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useCoinPrices } from '@/hooks/useCoinPrices';
 import { isToday, isYesterday, isWithinInterval, subDays, format, startOfMonth } from 'date-fns';
 
 interface TransactionListProps {
   baseTokenId?: number;
+  /** Restrict to these transaction types */
+  types?: Transaction['type'][];
   limit?: number;
+  /** Shown in the empty state when filters are active */
+  emptyLabel?: string;
+  onClearFilters?: () => void;
 }
 
 // Date grouping helper
@@ -69,7 +76,7 @@ function groupTransactionsByDate(transactions: Transaction[]) {
   return groups;
 }
 
-export function TransactionList({ baseTokenId, limit = 20 }: TransactionListProps) {
+export function TransactionList({ baseTokenId, types, limit = 20, emptyLabel, onClearFilters }: TransactionListProps) {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
 
@@ -80,7 +87,7 @@ export function TransactionList({ baseTokenId, limit = 20 }: TransactionListProp
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteTransactions({ base_token_id: baseTokenId }, limit);
+  } = useInfiniteTransactions({ base_token_id: baseTokenId, type: types }, limit);
 
   // Intersection observer for infinite scroll
   const { ref, inView } = useInView({ threshold: 0 });
@@ -97,6 +104,16 @@ export function TransactionList({ baseTokenId, limit = 20 }: TransactionListProp
 
   // Group transactions by date
   const groupedTransactions = groupTransactionsByDate(transactions);
+
+  // Prices for the ≈ USD line - same source as the wallet
+  const symbols = Array.from(
+    new Set(
+      transactions
+        .map((tx) => (tx.type === 'swap' ? tx.swap_to_coin : tx.coin_symbol))
+        .filter((s): s is string => Boolean(s))
+    )
+  );
+  const { data: prices } = useCoinPrices(symbols);
 
   const handleTransactionClick = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
@@ -140,11 +157,14 @@ export function TransactionList({ baseTokenId, limit = 20 }: TransactionListProp
 
   if (transactions.length === 0) {
     return (
-      <div className="rounded-lg border border-border bg-card p-6 text-center">
-        <Clock className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">
-          No transactions yet
-        </p>
+      <div className="rounded-lg border border-border bg-card p-6 text-center space-y-3">
+        <Clock className="mx-auto h-8 w-8 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">{emptyLabel ?? 'No transactions yet'}</p>
+        {onClearFilters && (
+          <Button variant="outline" size="sm" onClick={onClearFilters}>
+            Clear filters
+          </Button>
+        )}
       </div>
     );
   }
@@ -155,8 +175,8 @@ export function TransactionList({ baseTokenId, limit = 20 }: TransactionListProp
         {/* Grouped Transaction Lists */}
         {groupedTransactions.map((group) => (
           <div key={group.label}>
-            {/* Date Header */}
-            <h3 className="text-xs font-semibold uppercase text-text-secondary mb-3 px-1">
+            {/* Date Header - stays pinned under the app header while scrolling */}
+            <h3 className="sticky top-[max(4rem,calc(4rem+env(safe-area-inset-top)))] z-10 -mx-1 mb-2 bg-bg-primary/95 px-2 py-2 text-xs font-semibold uppercase text-text-secondary backdrop-blur">
               {group.label}
             </h3>
 
@@ -167,6 +187,7 @@ export function TransactionList({ baseTokenId, limit = 20 }: TransactionListProp
                   key={transaction.id}
                   transaction={transaction}
                   onClick={() => handleTransactionClick(transaction)}
+                  prices={prices}
                 />
               ))}
             </div>
