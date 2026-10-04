@@ -20,6 +20,7 @@ import {
   MessageSquare,
   Coins,
   Mail,
+  Layers,
 } from 'lucide-react';
 import { useAdminSupportNotifications } from '@/hooks/useAdminSupportNotifications';
 
@@ -62,6 +63,11 @@ const navItems: NavItem[] = [
     title: 'Earn Vaults',
     href: '/admin/earn-vaults',
     icon: TrendingUp,
+  },
+  {
+    title: 'Staking',
+    href: '/admin/staking',
+    icon: Layers,
   },
   {
     title: 'Copy Trade',
