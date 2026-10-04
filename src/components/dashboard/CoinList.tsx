@@ -8,7 +8,7 @@ import { useFilteredBalances } from '@/hooks/useBalances';
 import type { CoinPrice } from '@/lib/prices/prices-client';
 import type { UserBalance } from '@/types/balance';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, EyeOff, RefreshCw } from 'lucide-react';
+import { ArrowDownLeft, ChevronDown, EyeOff, RefreshCw, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CoinListProps {
@@ -16,6 +16,8 @@ interface CoinListProps {
   pricesMap?: Map<string, CoinPrice>;
   pricesLoading?: boolean;
   pricesError?: boolean;
+  /** Opens the receive flow - offered on a wallet with nothing in it yet */
+  onReceive?: () => void;
 }
 
 const OTHER_COINS_KEY = 'wallet-other-coins-open';
@@ -45,6 +47,7 @@ export function CoinList({
   pricesMap,
   pricesLoading,
   pricesError,
+  onReceive,
 }: CoinListProps) {
   const queryClient = useQueryClient();
   // DashboardClient shows the wallet set-up banner when there are no balances at all,
@@ -142,6 +145,27 @@ export function CoinList({
         </div>
       ) : (
         <div className="space-y-3">
+          {/* Nothing held yet: point new users at receiving their first coins */}
+          {!isLoading && showEmptyInline && (
+            <div className="flex items-center gap-4 rounded-lg border border-brand-primary/30 bg-brand-primary/5 p-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-primary/15">
+                <Wallet className="h-5 w-5 text-brand-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-text-primary">Your wallet is ready</p>
+                <p className="text-sm text-text-secondary">
+                  Receive crypto from another wallet or exchange to get started.
+                </p>
+              </div>
+              {onReceive && (
+                <Button size="sm" className="shrink-0" onClick={onReceive}>
+                  <ArrowDownLeft className="h-4 w-4" />
+                  Receive
+                </Button>
+              )}
+            </div>
+          )}
+
           {/* Coins you hold (or every coin, on a brand-new wallet) */}
           <div className="overflow-hidden rounded-lg border border-bg-tertiary bg-bg-secondary">
             {isLoading ? (

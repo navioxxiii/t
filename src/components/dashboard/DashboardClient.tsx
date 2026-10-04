@@ -153,6 +153,7 @@ export default function DashboardClient() {
             pricesMap={pricesMap}
             pricesLoading={pricesLoading}
             pricesError={pricesError}
+            onReceive={handleReceiveClick}
           />
         )}
       </div>
