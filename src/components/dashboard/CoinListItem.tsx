@@ -140,12 +140,17 @@ export function CoinListItem({
       {/* Value & Change */}
       <div className="shrink-0 text-right">
         {!price || priceError ? (
-          <>
-            <div className="font-semibold text-base leading-tight text-text-secondary">
+          totalBalance > 0 ? (
+            // Held but unpriced: its value isn't known (and is left out of the total)
+            <div className="font-semibold text-sm leading-tight text-text-secondary">
               Price unavailable
             </div>
-            <div className="mt-1 text-xs text-text-tertiary">Tap to retry</div>
-          </>
+          ) : (
+            // Nothing held: worth $0 whatever the price
+            <div className="font-semibold text-base leading-tight text-text-secondary">
+              {formatUSD(0)}
+            </div>
+          )
         ) : (
           <>
             <div className="font-semibold text-base leading-tight text-text-primary">
