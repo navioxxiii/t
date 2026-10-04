@@ -11,6 +11,8 @@ interface BalanceHeaderProps {
   isLoading?: boolean;
   change24h?: number;
   changePercentage?: number;
+  /** Held coins left out of the total because their price couldn't be loaded */
+  unpricedSymbols?: string[];
 }
 
 export function BalanceHeader({
@@ -18,12 +20,15 @@ export function BalanceHeader({
   isLoading = false,
   change24h = 0,
   changePercentage = 0,
+  unpricedSymbols = [],
 }: BalanceHeaderProps) {
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
 
   const toggleBalanceVisibility = () => {
     setIsBalanceVisible(!isBalanceVisible);
   };
+
+  const isPartial = unpricedSymbols.length > 0;
 
   const isPositiveChange = change24h > 0;
   const isNegativeChange = change24h < 0;
@@ -61,13 +66,25 @@ export function BalanceHeader({
           )}
         </div>
 
-        {/* 24h Change */}
+        {/* Total is incomplete when held coins have no price */}
+        {!isLoading && isPartial && (
+          <p className="mt-2 text-center text-xs text-text-tertiary">
+            Excludes{" "}
+            {unpricedSymbols.length <= 3
+              ? unpricedSymbols.join(", ")
+              : `${unpricedSymbols.length} coins`}{" "}
+            (price unavailable)
+          </p>
+        )}
+
+        {/* 24h Change - hidden when the total is partial, since it would mislead */}
         {isLoading ? (
           <div className="mt-3 flex items-center justify-center">
             <Skeleton className="h-7 w-40 rounded-full shimmer" />
           </div>
         ) : (
           isBalanceVisible &&
+          !isPartial &&
           change24h !== 0 && (
             <div className="mt-3 flex items-center justify-center">
               <div

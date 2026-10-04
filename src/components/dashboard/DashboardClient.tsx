@@ -53,10 +53,15 @@ export default function DashboardClient() {
   const { data: pricesMap, isLoading: pricesLoading, isError: pricesError } = useCoinPrices(symbols);
 
   // Calculate total portfolio value
-  const { totalValue, change24h, changePercentage } = useMemo(() => {
+  const { totalValue, change24h, changePercentage, unpricedSymbols } = useMemo(() => {
     if (!balances || !pricesMap) {
-      return { totalValue: 0, change24h: 0, changePercentage: 0 };
+      return { totalValue: 0, change24h: 0, changePercentage: 0, unpricedSymbols: [] as string[] };
     }
+
+    // Held coins without a price can't be counted - surface them instead of treating them as $0
+    const unpricedSymbols = balances
+      .filter((b) => Number(b.balance) > 0 && !pricesMap.get(b.token.symbol))
+      .map((b) => b.token.symbol);
 
     // Create balance map
     const balanceMap = new Map<string, number>();
@@ -68,7 +73,7 @@ export default function DashboardClient() {
     const totalValue = calculatePortfolioValue(balanceMap, pricesMap);
     const { change, changePercentage } = calculatePortfolioChange(balanceMap, pricesMap);
 
-    return { totalValue, change24h: change, changePercentage };
+    return { totalValue, change24h: change, changePercentage, unpricedSymbols };
   }, [balances, pricesMap]);
 
   const handleCoinClick = (tokenId: number) => {
@@ -128,6 +133,7 @@ export default function DashboardClient() {
         isLoading={isLoading}
         change24h={change24h}
         changePercentage={changePercentage}
+        unpricedSymbols={unpricedSymbols}
       />
 
       {/* Quick Actions */}
