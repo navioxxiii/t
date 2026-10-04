@@ -12,15 +12,17 @@ import { useBalances } from '@/hooks/useBalances';
 import type { Transaction } from '@/hooks/useTransactions';
 import { TransactionList } from '@/components/transactions/TransactionList';
 import { cn } from '@/lib/utils';
+import { STAKING_ENABLED } from '@/lib/feature-flags';
 
-type TypeFilter = 'all' | 'in' | 'out' | 'swap' | 'earn' | 'copy';
+type TypeFilter = 'all' | 'in' | 'out' | 'swap' | 'earn' | 'staking' | 'copy';
 
 const TYPE_FILTERS: { value: TypeFilter; label: string; types?: Transaction['type'][]; empty: string }[] = [
   { value: 'all', label: 'All', empty: 'No transactions yet' },
-  { value: 'in', label: 'Received', types: ['deposit', 'earn_claim', 'copy_trade_stop'], empty: 'Nothing received yet' },
-  { value: 'out', label: 'Sent', types: ['withdrawal', 'earn_invest', 'copy_trade_start'], empty: 'Nothing sent yet' },
+  { value: 'in', label: 'Received', types: ['deposit', 'earn_claim', 'copy_trade_stop', 'staking_reward', 'staking_release'], empty: 'Nothing received yet' },
+  { value: 'out', label: 'Sent', types: ['withdrawal', 'earn_invest', 'copy_trade_start', 'staking_stake'], empty: 'Nothing sent yet' },
   { value: 'swap', label: 'Swaps', types: ['swap'], empty: 'No swaps yet' },
   { value: 'earn', label: 'Earn', types: ['earn_invest', 'earn_claim'], empty: 'No earn activity yet' },
+  { value: 'staking', label: 'Staking', types: ['staking_stake', 'staking_unstake', 'staking_reward', 'staking_release'], empty: 'No staking activity yet' },
   { value: 'copy', label: 'Copy trade', types: ['copy_trade_start', 'copy_trade_stop'], empty: 'No copy trading activity yet' },
 ];
 
@@ -38,7 +40,7 @@ export default function ActivityClient() {
         {/* Filters: transaction type chips + coin */}
         <div className="mb-4 flex items-center gap-2">
           <div className="no-scrollbar flex min-w-0 items-center gap-1 overflow-x-auto rounded-lg bg-bg-tertiary p-1">
-            {TYPE_FILTERS.map((filter) => (
+            {TYPE_FILTERS.filter((f) => f.value !== 'staking' || STAKING_ENABLED).map((filter) => (
               <button
                 key={filter.value}
                 type="button"

@@ -23,6 +23,7 @@ const routeTitles: Record<string, string> = {
   '/settings': 'Settings',
   '/earn': 'Earn',
   '/copy-trade': 'Copy Trade',
+  '/staking': 'Staking',
   '/kyc': 'KYC Verification',
 };
 

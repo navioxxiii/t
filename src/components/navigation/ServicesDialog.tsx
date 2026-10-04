@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { TrendingUp, Users2, DollarSign, ArrowRight } from 'lucide-react';
+import { TrendingUp, Users2, DollarSign, ArrowRight, Layers } from 'lucide-react';
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/responsive-dialog';
 import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/utils/haptics';
-import { EARN_ENABLED, COPY_TRADE_ENABLED } from '@/lib/feature-flags';
+import { EARN_ENABLED, COPY_TRADE_ENABLED, STAKING_ENABLED } from '@/lib/feature-flags';
 
 interface Service {
   id: string;
@@ -40,6 +40,13 @@ export function ServicesDialog({ open, onOpenChange }: ServicesDialogProps) {
       href: '/earn',
     },
     {
+      id: 'staking',
+      title: 'Staking',
+      description: 'Stake PoS coins you hold and earn variable network rewards',
+      icon: Layers,
+      href: '/staking',
+    },
+    {
       id: 'copy-trade',
       title: 'Copy Trade',
       description: 'Auto-copy top traders and grow your portfolio',
@@ -61,6 +68,7 @@ export function ServicesDialog({ open, onOpenChange }: ServicesDialogProps) {
   const services = allServices.filter(service => {
     if (service.id === 'earn') return EARN_ENABLED;
     if (service.id === 'copy-trade') return COPY_TRADE_ENABLED;
+    if (service.id === 'staking') return STAKING_ENABLED;
     return true;
   });
 

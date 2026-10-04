@@ -53,7 +53,11 @@ export interface Transaction {
     | "earn_claim"
     | "earn_invest"
     | "copy_trade_start"
-    | "copy_trade_stop";
+    | "copy_trade_stop"
+    | "staking_stake"
+    | "staking_unstake"
+    | "staking_reward"
+    | "staking_release";
   amount: string;
   coin_symbol: string;
   token: TokenInfo | null; // NEW: Token data from base_tokens

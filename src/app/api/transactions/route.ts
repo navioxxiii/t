@@ -15,6 +15,10 @@ const TRANSACTION_TYPES = [
   'earn_claim',
   'copy_trade_start',
   'copy_trade_stop',
+  'staking_stake',
+  'staking_unstake',
+  'staking_reward',
+  'staking_release',
 ];
 
 export async function GET(request: NextRequest) {

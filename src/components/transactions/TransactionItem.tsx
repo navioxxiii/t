@@ -5,7 +5,7 @@
 
 'use client';
 
-import { ArrowUpRight, ArrowDownLeft, Loader2, PiggyBank, TrendingUp, Users2 } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Layers, Loader2, PiggyBank, TrendingUp, Undo2, Users2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { Transaction } from '@/hooks/useTransactions';
@@ -53,7 +53,8 @@ function getStatusDisplay(status: string, type: string): StatusDisplay | null {
 // Per-type presentation: title, badge icon/colour, and whether funds came in or went out
 const TYPE_DISPLAY: Record<
   Exclude<Transaction['type'], 'swap'>,
-  { title: string; icon: typeof ArrowUpRight; badge: string; direction: 'in' | 'out' }
+  // 'none': informational, no balance change (e.g. unstake requested)
+  { title: string; icon: typeof ArrowUpRight; badge: string; direction: 'in' | 'out' | 'none' }
 > = {
   deposit: { title: 'Deposit', icon: ArrowDownLeft, badge: 'bg-green-500', direction: 'in' },
   withdrawal: { title: 'Send', icon: ArrowUpRight, badge: 'bg-blue-500', direction: 'out' },
@@ -61,6 +62,10 @@ const TYPE_DISPLAY: Record<
   earn_claim: { title: 'Earn Claim', icon: TrendingUp, badge: 'bg-green-500', direction: 'in' },
   copy_trade_start: { title: 'Start Copying', icon: Users2, badge: 'bg-blue-500', direction: 'out' },
   copy_trade_stop: { title: 'Stop Copying', icon: Users2, badge: 'bg-green-500', direction: 'in' },
+  staking_stake: { title: 'Staked', icon: Layers, badge: 'bg-brand-primary', direction: 'out' },
+  staking_unstake: { title: 'Unstake started', icon: Undo2, badge: 'bg-yellow-500', direction: 'none' },
+  staking_reward: { title: 'Staking reward', icon: TrendingUp, badge: 'bg-green-500', direction: 'in' },
+  staking_release: { title: 'Unstaked', icon: Undo2, badge: 'bg-green-500', direction: 'in' },
 };
 
 function formatDate(dateString: string) {
@@ -183,10 +188,10 @@ export function TransactionItem({ transaction, onClick, prices }: TransactionIte
           <p
             className={cn(
               'text-base md:text-lg font-semibold whitespace-nowrap',
-              direction === 'in' ? 'text-action-green' : 'text-text-primary'
+              direction === 'in' ? 'text-action-green' : direction === 'none' ? 'text-text-secondary' : 'text-text-primary'
             )}
           >
-            {direction === 'in' ? '+' : '−'}
+            {direction === 'in' ? '+' : direction === 'out' ? '−' : ''}
             {formatAmount(amount, symbol)} <span className="text-xs md:text-sm font-medium">{symbol}</span>
           </p>
           {usdValue !== null && (

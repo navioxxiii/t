@@ -58,6 +58,16 @@ export function TransactionDetailDrawer({
   const isEarnClaim = transaction.type === "earn_claim";
   const isCopyTradeStart = transaction.type === "copy_trade_start";
   const isCopyTradeStop = transaction.type === "copy_trade_stop";
+  const stakingLabels: Partial<Record<Transaction["type"], string>> = {
+    staking_stake: "Staked",
+    staking_unstake: "Unstake started",
+    staking_reward: "Staking reward",
+    staking_release: "Unstaked",
+  };
+  const stakingLabel = stakingLabels[transaction.type];
+  // Money coming into the available balance (unstake requests move nothing yet)
+  const isIncoming = isDeposit || transaction.type === "staking_reward" || transaction.type === "staking_release";
+  const isNeutral = transaction.type === "staking_unstake";
   const amount = parseFloat(transaction.amount);
   const usdValue = coinPrice ? amount * coinPrice : 0;
   const metadata = transaction.metadata;
@@ -188,7 +198,9 @@ export function TransactionDetailDrawer({
                     ? `Copy Trade • Start Copying ${metadata && "trader_name" in metadata ? metadata.trader_name : "Trader"}`
                     : isCopyTradeStop
                       ? `Copy Trade • Stop Copying ${metadata && "trader_name" in metadata ? metadata.trader_name : "Trader"}`
-                      : `${isDeposit ? "Deposit" : "Withdrawal"} • ${transaction.coin_symbol}`}
+                      : stakingLabel
+                        ? `${stakingLabel} • ${transaction.coin_symbol}`
+                        : `${isDeposit ? "Deposit" : "Withdrawal"} • ${transaction.coin_symbol}`}
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
@@ -289,10 +301,10 @@ export function TransactionDetailDrawer({
                   {/* Arrow indicator */}
                   <div
                     className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full flex items-center justify-center shadow-md ${
-                      isDeposit ? "bg-green-500" : "bg-blue-500"
+                      isIncoming ? "bg-green-500" : "bg-blue-500"
                     }`}
                   >
-                    {isDeposit ? (
+                    {isIncoming ? (
                       <ArrowDownLeft className="w-4 h-4 text-white" />
                     ) : (
                       <ArrowUpRight className="w-4 h-4 text-white" />
@@ -504,9 +516,9 @@ export function TransactionDetailDrawer({
             <div className="text-center py-4 border-y border-bg-tertiary">
               <p className="text-sm text-text-secondary mb-1">Amount</p>
               <p
-                className={`text-3xl font-bold ${isDeposit ? "text-green-500" : "text-blue-500"}`}
+                className={`text-3xl font-bold ${isIncoming ? "text-green-500" : isNeutral ? "text-text-secondary" : "text-blue-500"}`}
               >
-                {isDeposit ? "+" : "-"}
+                {isIncoming ? "+" : isNeutral ? "" : "-"}
                 {formatCrypto(amount, transaction.coin_symbol)}
               </p>
               <p className="text-lg text-text-secondary mt-1">
