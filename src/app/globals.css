@@ -356,6 +356,9 @@
   body {
     @apply bg-bg-primary text-text-primary antialiased min-h-screen;
     font-feature-settings: "cv11", "ss01";
+    /* The body is the scroll container (see overflow-x below). Keep its scrollbar's space
+       reserved when a modal locks scrolling, so content doesn't jump sideways. */
+    scrollbar-gutter: stable;
   }
 
   /* Ensure html and body don't interfere with fixed positioning */
