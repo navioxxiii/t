@@ -6,6 +6,7 @@ import { formatCrypto, formatPrice, formatUSD, getChangeColor } from "@/lib/util
 import type { CoinPrice } from "@/lib/prices/prices-client";
 import type { BaseToken } from "@/types/balance";
 import { getTokenIcon } from "@/config/token-icons";
+import { HIDDEN_VALUE, usePrivacyStore } from "@/stores/privacyStore";
 
 interface CoinListItemProps {
   token: BaseToken;
@@ -41,6 +42,7 @@ export function CoinListItem({
   const hasLockedBalance = lockedBalance > 0;
 
   const usdValue = price ? totalBalance * price.current_price : 0;
+  const hideBalances = usePrivacyStore((state) => state.hideBalances);
   const priceChange = price?.price_change_percentage_24h ?? 0;
   const changeColor = getChangeColor(priceChange);
 
@@ -100,12 +102,12 @@ export function CoinListItem({
         </div>
         <div className="flex items-center gap-2 mt-1 whitespace-nowrap">
           <span className="truncate text-sm text-text-secondary">
-            {formatCrypto(availableBalance, token.symbol)} {token.symbol}
+            {hideBalances ? HIDDEN_VALUE : formatCrypto(availableBalance, token.symbol)} {token.symbol}
           </span>
           {hasLockedBalance && (
             <span className="inline-flex shrink-0 items-center gap-1 px-1.5 py-0.5 bg-warning/10 text-warning text-xs rounded">
               <Lock className="h-3 w-3" />
-              {formatCrypto(lockedBalance, token.symbol)}
+              {hideBalances ? HIDDEN_VALUE : formatCrypto(lockedBalance, token.symbol)}
             </span>
           )}
           {networkCount > 1 && (
@@ -147,7 +149,7 @@ export function CoinListItem({
         ) : (
           <>
             <div className="font-semibold text-base leading-tight text-text-primary">
-              {formatUSD(usdValue)}
+              {hideBalances ? HIDDEN_VALUE : formatUSD(usdValue)}
             </div>
             {/* Unit price paired with its 24h change */}
             <div className="mt-1 text-xs whitespace-nowrap">

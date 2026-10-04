@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { formatUSD } from "@/lib/utils/currency";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usePrivacyStore } from "@/stores/privacyStore";
 
 interface BalanceHeaderProps {
   totalBalance: number;
@@ -22,12 +22,9 @@ export function BalanceHeader({
   changePercentage = 0,
   unpricedSymbols = [],
 }: BalanceHeaderProps) {
-  const [isBalanceVisible, setIsBalanceVisible] = useState(true);
-
-  const toggleBalanceVisibility = () => {
-    setIsBalanceVisible(!isBalanceVisible);
-  };
-
+  const hideBalances = usePrivacyStore((state) => state.hideBalances);
+  const toggleBalanceVisibility = usePrivacyStore((state) => state.toggleHideBalances);
+  const isBalanceVisible = !hideBalances;
   const isPartial = unpricedSymbols.length > 0;
 
   const isPositiveChange = change24h > 0;
