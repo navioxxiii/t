@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowUpRight,
@@ -8,13 +9,16 @@ import {
   ArrowLeftRight,
   DollarSign,
   Users2,
+  Layers,
+  LayoutGrid,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/utils/haptics';
-import { EARN_ENABLED, COPY_TRADE_ENABLED } from '@/lib/feature-flags';
+import { EARN_ENABLED, COPY_TRADE_ENABLED, STAKING_ENABLED } from '@/lib/feature-flags';
+import { ServicesDialog } from '@/components/navigation/ServicesDialog';
 
-// Buy isn't live yet - flip to show it (with its "Soon" badge removed) at launch
-const BUY_ENABLED = false;
+// Most slots that fit cleanly on a 360px phone; beyond this the last slot becomes "More"
+const MAX_SLOTS = 5;
 
 interface QuickAction {
   id: string;
@@ -37,6 +41,7 @@ export function QuickActions({
   onSwap,
 }: QuickActionsProps) {
   const router = useRouter();
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const allActions: QuickAction[] = [
     {
@@ -82,6 +87,15 @@ export function QuickActions({
       },
     },
     {
+      id: 'staking',
+      label: 'Staking',
+      icon: <Layers className="h-5 w-5" />,
+      onClick: () => {
+        haptics.selection();
+        router.push('/staking');
+      },
+    },
+    {
       id: 'copy-trade',
       label: 'Copy Trade',
       icon: <Users2 className="h-5 w-5" />,
@@ -90,6 +104,8 @@ export function QuickActions({
         router.push('/copy-trade');
       },
     },
+    // Keep Buy last: it's "Soon", so it's the first to move into "More" when space runs out.
+    // At launch, remove disabled/badge and give it a real onClick.
     {
       id: 'buy',
       label: 'Buy',
@@ -101,21 +117,39 @@ export function QuickActions({
   ];
 
   // Filter actions based on feature flags
-  const actions = allActions.filter(action => {
+  const enabledActions = allActions.filter(action => {
     if (action.id === 'earn') return EARN_ENABLED;
+    if (action.id === 'staking') return STAKING_ENABLED;
     if (action.id === 'copy-trade') return COPY_TRADE_ENABLED;
-    if (action.id === 'buy') return BUY_ENABLED;
     return true;
   });
+
+  // Too many to fit: keep the first ones and put the rest behind "More" (the Services menu lists them all)
+  const visibleActions: QuickAction[] =
+    enabledActions.length > MAX_SLOTS
+      ? [
+          ...enabledActions.slice(0, MAX_SLOTS - 1),
+          {
+            id: 'more',
+            label: 'More',
+            icon: <LayoutGrid className="h-5 w-5" />,
+            onClick: () => {
+              haptics.selection();
+              setMoreOpen(true);
+            },
+          },
+        ]
+      : enabledActions;
 
   return (
     <div className="w-full px-4 pb-4 sm:px-6 lg:px-8">
       {/* Every action in view: fills the row on phones, centered from md up */}
       <div className="mx-auto flex max-w-4xl justify-between md:justify-center md:gap-10">
-        {actions.map((action) => (
+        {visibleActions.map((action) => (
           <QuickActionButton key={action.id} {...action} />
         ))}
       </div>
+      <ServicesDialog open={moreOpen} onOpenChange={setMoreOpen} />
     </div>
   );
 }
