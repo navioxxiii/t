@@ -17,16 +17,21 @@ export const EARN_ENABLED = process.env.NEXT_PUBLIC_EARN_ENABLED === 'true';
  */
 export const COPY_TRADE_ENABLED = process.env.NEXT_PUBLIC_COPY_TRADE_ENABLED === 'true';
 
+/** Staking (pooled PoS staking with admin-recorded rewards). Off until ops are ready. */
+export const STAKING_ENABLED = process.env.NEXT_PUBLIC_STAKING_ENABLED === 'true';
+
 /**
  * Helper to check if a feature is enabled
  * Usage: if (!isFeatureEnabled('earn')) return notFound()
  */
-export function isFeatureEnabled(feature: 'earn' | 'copy-trade'): boolean {
+export function isFeatureEnabled(feature: 'earn' | 'copy-trade' | 'staking'): boolean {
   switch (feature) {
     case 'earn':
       return EARN_ENABLED;
     case 'copy-trade':
       return COPY_TRADE_ENABLED;
+    case 'staking':
+      return STAKING_ENABLED;
     default:
       return false;
   }
